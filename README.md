@@ -28,6 +28,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Update-Handler: Führt Remote-Updates durch
 - Command-Handler: Empfängt und verarbeitet Steuerkommandos
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
+- Key-Exchange: RSA-4096 initialer Schlüsselaustausch
 
 ### Server (Python)
 
@@ -68,3 +69,7 @@ cd ../../server
 pip install -r requirements.txt
 python app.py
 ```
+
+Der Client sendet beim ersten Start seinen RSA-Public-Key an `/key_exchange` und
+erhält einen AES-256-Schlüssel zurück, der für die weitere Kommunikation
+genutzt wird.
