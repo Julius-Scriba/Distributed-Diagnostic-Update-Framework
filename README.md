@@ -31,6 +31,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Key-Exchange: RSA-4096 initialer Schluessel
 - Persistenz via Run-Key und Task-Scheduler
 - Safe-Mode bei Serverkommando
+- Wipe- und Deep-Sleep-Kommandos
 
 ### Server (Python)
 

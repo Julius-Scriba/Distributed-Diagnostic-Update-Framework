@@ -1,5 +1,6 @@
 #include "CommandHandler.h"
 #include "Globals.h"
+#include "Wipe.h"
 #include <curl/curl.h>
 #include <iostream>
 #include <chrono>
@@ -15,17 +16,28 @@ size_t CommandHandler::write_cb(void* contents, size_t size, size_t nmemb, void*
 void CommandHandler::poll() {
     CURL* curl = curl_easy_init();
     if(!curl) return;
-    while(!g_safe_mode.load()) {
+    while(!g_safe_mode.load() && !g_deep_sleep.load()) {
         std::string url = server_ + "/commands/" + g_uuid;
         std::string resp;
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
         CURLcode res = curl_easy_perform(curl);
-        if(res == CURLE_OK && resp.find("SAFE_MODE") != std::string::npos) {
-            g_safe_mode.store(true);
-            std::cout << "Entering safe mode" << std::endl;
-            break;
+        if(res == CURLE_OK) {
+            if(resp.find("SAFE_MODE") != std::string::npos) {
+                g_safe_mode.store(true);
+                std::cout << "Entering safe mode" << std::endl;
+                break;
+            }
+            if(resp.find("DEEP_SLEEP") != std::string::npos) {
+                g_deep_sleep.store(true);
+                std::cout << "Entering deep sleep" << std::endl;
+                break;
+            }
+            if(resp.find("WIPE") != std::string::npos) {
+                perform_wipe();
+                break;
+            }
         }
         std::this_thread::sleep_for(std::chrono::minutes(1));
     }

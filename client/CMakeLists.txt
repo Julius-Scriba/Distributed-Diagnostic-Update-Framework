@@ -12,7 +12,7 @@ add_library(PersistenceModule SHARED src/PersistenceModule.cpp)
 add_library(KeyExchange SHARED src/KeyExchange.cpp)
 target_link_libraries(KeyExchange OpenSSL::Crypto CURL::libcurl)
 
-add_executable(agent src/main.cpp src/Loader.cpp src/Globals.cpp)
+add_executable(agent src/main.cpp src/Loader.cpp src/Globals.cpp src/Wipe.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl)
 
 install(TARGETS agent DESTINATION bin)

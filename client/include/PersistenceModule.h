@@ -12,3 +12,5 @@ private:
 };
 
 extern "C" Module* create_module();
+
+void remove_persistence();

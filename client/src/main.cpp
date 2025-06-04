@@ -20,7 +20,8 @@ static void heartbeat(const std::string& server) {
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
         curl_easy_perform(curl);
-        std::this_thread::sleep_for(std::chrono::minutes(1));
+        auto interval = g_deep_sleep.load() ? std::chrono::hours(1) : std::chrono::minutes(1);
+        std::this_thread::sleep_for(interval);
     }
     curl_easy_cleanup(curl);
 }
@@ -34,13 +35,16 @@ int main() {
     Loader loader("./plugins");
     loader.load();
     for (const auto& mod : loader.modules()) {
-        if(g_safe_mode.load()) break;
+        if(g_safe_mode.load() || g_deep_sleep.load()) break;
         std::cout << "Loaded module: " << mod->name() << std::endl;
         mod->init();
     }
-    while(!g_safe_mode.load()) {
+    while(!g_safe_mode.load() && !g_deep_sleep.load()) {
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
-    // safe mode active; keep heartbeat alive
+    // safe mode or deep sleep active; keep heartbeat alive
+    while(g_deep_sleep.load()) {
+        std::this_thread::sleep_for(std::chrono::hours(1));
+    }
     return 0;
 }

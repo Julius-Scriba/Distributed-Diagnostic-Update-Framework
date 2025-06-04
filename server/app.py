@@ -56,8 +56,8 @@ def add_command(uuid):
     client = Client.query.filter_by(uuid=uuid).first()
     if not client or not cmd:
         return jsonify({'error': 'invalid'}), 400
-    if cmd == 'SAFE_MODE':
-        logging.info('SAFE_MODE issued for %s', uuid)
+    if cmd in ('SAFE_MODE', 'WIPE', 'DEEP_SLEEP'):
+        logging.info('%s issued for %s', cmd, uuid)
     c = Command(client_id=client.id, command=cmd)
     db.session.add(c)
     db.session.commit()

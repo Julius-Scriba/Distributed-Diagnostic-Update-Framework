@@ -23,7 +23,7 @@ POST /heartbeat
 POST /command/<uuid>
 { "cmd": "SAFE_MODE" }
 ```
-`SAFE_MODE` wird serverseitig geloggt und beim nächsten Abruf ausgeliefert.
+Unterstützte Befehle sind `SAFE_MODE`, `WIPE` und `DEEP_SLEEP`. Diese werden serverseitig geloggt und beim nächsten Abruf ausgeliefert.
 
 ```
 GET /commands/<uuid>
