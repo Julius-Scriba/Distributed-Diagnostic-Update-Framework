@@ -77,3 +77,13 @@ python app.py
 ```
 
 Der API-Key kann über die Umgebungsvariable `ADMIN_API_KEY` gesetzt werden (Standard: `changeme`).
+
+## Domain Fronting Vorbereitung
+
+In `config.json` lässt sich eine Liste erlaubter Hostnamen konfigurieren. Bei eingehenden Anfragen prüft der Server den `Host`-Header und lehnt unbekannte Hosts ab. Über `/config/targets` kann die aktuelle Routing-Tabelle abgefragt werden.
+Beispiel `config.json`:
+```json
+{
+  "allowed_hosts": ["localhost", "example.cloudfront.net"]
+}
+```

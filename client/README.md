@@ -2,12 +2,25 @@
 
 Der Agent lädt zur Laufzeit Module aus `plugins`. Neu ist ein Persistenzmechanismus für Windows und ein Safe‑Mode.
 Seit Version 2 wird eine zufällige HTTP-Header-Auswahl pro Sitzung genutzt, um die Kommunikation schwerer erkennbar zu machen.
+Ab Version 3 liest ein neues `ConfigModule` Einstellungen aus `agent_config.json`, sodass Ziel-URLs und Host-Header flexibel gesetzt werden können.
 
 ## Build
 ```
 mkdir build && cd build
 cmake ..
 make
+```
+
+## Konfiguration
+Eine Datei `agent_config.json` im gleichen Verzeichnis erlaubt die Vorgabe von
+`server_url`, optionalem `host_header` und einem `path_prefix` für alle HTTP-Aufrufe.
+Beispiel:
+```json
+{
+  "server_url": "http://my.cdn.tld",
+  "host_header": "origin.example.com",
+  "path_prefix": "/api"
+}
 ```
 
 ## Persistenz

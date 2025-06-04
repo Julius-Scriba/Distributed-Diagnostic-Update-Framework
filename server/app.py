@@ -22,6 +22,16 @@ logging.basicConfig(level=logging.INFO)
 TIMEOUT_SECONDS = 180
 ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
 
+CONFIG = {}
+ALLOWED_HOSTS = []
+if os.path.exists('config.json'):
+    with open('config.json', 'r') as f:
+        try:
+            CONFIG = json.load(f)
+            ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
+        except Exception as e:
+            logging.warning('Failed to load config.json: %s', e)
+
 
 def require_api_key(f):
     @wraps(f)
@@ -31,6 +41,13 @@ def require_api_key(f):
             abort(401)
         return f(*args, **kwargs)
     return wrapper
+
+@app.before_request
+def check_host_header():
+    host = request.headers.get('Host', '')
+    if ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
+        logging.warning('Blocked request with host %s', host)
+        abort(404)
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -179,6 +196,10 @@ def status(uuid):
     state = 'online' if client.online else 'offline'
     last = client.last_seen.isoformat() if client.last_seen else None
     return jsonify({'uuid': uuid, 'status': state, 'last_seen': last})
+
+@app.route('/config/targets', methods=['GET'])
+def list_targets():
+    return jsonify({'targets': ALLOWED_HOSTS})
 
 
 @app.route('/admin/agents', methods=['GET'])

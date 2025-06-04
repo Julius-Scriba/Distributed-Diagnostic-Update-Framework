@@ -35,6 +35,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
 - Zufällige HTTP-Header pro Client-Session zur Stealth-Kommunikation
+- Vorbereitung für Domain Fronting mit konfigurierbaren Zieladressen
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
 
@@ -48,6 +49,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Loggingsystem
 - Admin-Schnittstelle mit API-Key-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
+- Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
 
 ---
 

