@@ -55,3 +55,16 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 ## Lizenz
 
 Dieses Projekt ist für Forschungs- und Entwicklungszwecke bestimmt.
+
+### Build-Anleitung
+
+```
+# Client
+cd client && mkdir build && cd build
+cmake .. && make
+
+# Server
+cd ../../server
+pip install -r requirements.txt
+python app.py
+```
