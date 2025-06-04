@@ -41,7 +41,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Kommandomodul pro Client
 - Persistente Datenhaltung (SQLite, vorbereitbar für PostgreSQL)
 - Loggingsystem
-- Admin-Schnittstelle vorbereitet für spätere Erweiterungen
+- Admin-Schnittstelle mit API-Key-Authentifizierung
 
 ---
 
@@ -78,3 +78,7 @@ Der Server speichert pro Client den Zeitpunkt des letzten Heartbeats. Über `/st
 Der Client sendet beim ersten Start seinen RSA-Public-Key an `/key_exchange` und
 erhält einen AES-256-Schlüssel zurück, der für die weitere Kommunikation
 genutzt wird.
+
+Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
+`/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der
+API-Schlüssel wird via `X-API-KEY` Header übermittelt.

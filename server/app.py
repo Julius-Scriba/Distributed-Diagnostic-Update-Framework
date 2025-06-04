@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import logging
@@ -8,6 +8,8 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
+from functools import wraps
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dduf.db'
 db = SQLAlchemy(app)
@@ -15,6 +17,17 @@ db = SQLAlchemy(app)
 logging.basicConfig(level=logging.INFO)
 
 TIMEOUT_SECONDS = 180
+ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
+
+
+def require_api_key(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        key = request.headers.get('X-API-KEY')
+        if key != ADMIN_API_KEY:
+            abort(401)
+        return f(*args, **kwargs)
+    return wrapper
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +42,17 @@ class Command(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
     command = db.Column(db.String(64))
     executed = db.Column(db.Boolean, default=False)
+
+class LogEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    message = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+def log_event(client, message):
+    entry = LogEntry(client_id=client.id, message=message)
+    db.session.add(entry)
+    db.session.commit()
 
 
 def check_timeouts():
@@ -50,6 +74,7 @@ def register_client(uuid):
     client.last_seen = datetime.utcnow()
     client.online = True
     db.session.commit()
+    log_event(client, 'register')
     return client
 
 @app.route('/register', methods=['POST'])
@@ -62,6 +87,7 @@ def register():
 def heartbeat():
     data = request.get_json()
     client = register_client(data['uuid'])
+    log_event(client, 'heartbeat')
     return jsonify({'status': 'ok'})
 
 @app.route('/command/<uuid>', methods=['POST'])
@@ -73,6 +99,7 @@ def add_command(uuid):
         return jsonify({'error': 'invalid'}), 400
     if cmd in ('SAFE_MODE', 'WIPE', 'DEEP_SLEEP'):
         logging.info('%s issued for %s', cmd, uuid)
+    log_event(client, f'queue {cmd}')
     c = Command(client_id=client.id, command=cmd)
     db.session.add(c)
     db.session.commit()
@@ -123,6 +150,39 @@ def status(uuid):
     state = 'online' if client.online else 'offline'
     last = client.last_seen.isoformat() if client.last_seen else None
     return jsonify({'uuid': uuid, 'status': state, 'last_seen': last})
+
+
+@app.route('/admin/agents', methods=['GET'])
+@require_api_key
+def list_agents():
+    check_timeouts()
+    clients = Client.query.all()
+    result = []
+    for c in clients:
+        result.append({
+            'uuid': c.uuid,
+            'online': c.online,
+            'last_seen': c.last_seen.isoformat() if c.last_seen else None
+        })
+    return jsonify({'agents': result})
+
+
+@app.route('/admin/logs/<uuid>', methods=['GET'])
+@require_api_key
+def agent_logs(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client:
+        return jsonify({'logs': []})
+    logs = LogEntry.query.filter_by(client_id=client.id).order_by(LogEntry.created_at.desc()).all()
+    return jsonify({'logs': [
+        {'message': l.message, 'timestamp': l.created_at.isoformat()} for l in logs
+    ]})
+
+
+@app.route('/admin/command/<uuid>', methods=['POST'])
+@require_api_key
+def admin_command(uuid):
+    return add_command(uuid)
 
 if __name__ == '__main__':
     db.create_all()

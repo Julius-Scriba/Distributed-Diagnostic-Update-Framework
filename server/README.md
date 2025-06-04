@@ -40,7 +40,32 @@ GET /commands/<uuid>
 -> { "commands": ["SAFE_MODE"] }
 ```
 
+## Admin Endpoints
+
+Für administrative Aufgaben steht ein einfacher API-Key geschützter Zugriff zur Verfügung. Der Key wird über den HTTP-Header `X-API-KEY` übermittelt.
+
+### Agents auflisten
+```
+GET /admin/agents
+-> { "agents": [{"uuid": "<id>", "online": true, "last_seen": "..."}] }
+```
+
+### Logs eines Agents
+```
+GET /admin/logs/<uuid>
+-> { "logs": [{"message": "...", "timestamp": "..."}] }
+```
+
+### Kommando pushen
+```
+POST /admin/command/<uuid>
+{ "cmd": "SAFE_MODE" }
+```
+Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
+
 ```
 pip install -r requirements.txt
 python app.py
 ```
+
+Der API-Key kann über die Umgebungsvariable `ADMIN_API_KEY` gesetzt werden (Standard: `changeme`).
