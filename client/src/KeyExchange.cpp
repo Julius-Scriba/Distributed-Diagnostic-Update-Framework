@@ -1,5 +1,6 @@
 #include "KeyExchange.h"
 #include "Fingerprint.h"
+#include "Globals.h"
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <curl/curl.h>
@@ -73,6 +74,7 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
 void KeyExchange::init() {
     generate_rsa();
     auto fp = collect_fingerprint();
+g_uuid = fp.uuid;
     std::string resp = send_public_key(fp.uuid);
     if(resp.empty()) {
         std::cerr << "Key exchange failed" << std::endl;

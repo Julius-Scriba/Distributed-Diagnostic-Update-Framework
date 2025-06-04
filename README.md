@@ -28,7 +28,9 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Update-Handler: Führt Remote-Updates durch
 - Command-Handler: Empfängt und verarbeitet Steuerkommandos
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
-- Key-Exchange: RSA-4096 initialer Schlüsselaustausch
+- Key-Exchange: RSA-4096 initialer Schluessel
+- Persistenz via Run-Key und Task-Scheduler
+- Safe-Mode bei Serverkommando
 
 ### Server (Python)
 

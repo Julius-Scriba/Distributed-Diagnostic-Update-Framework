@@ -21,6 +21,13 @@ class Client(db.Model):
     public_key = db.Column(db.Text)
     aes_key = db.Column(db.Text)
 
+class Command(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    command = db.Column(db.String(64))
+    executed = db.Column(db.Boolean, default=False)
+
+
 def register_client(uuid):
     client = Client.query.filter_by(uuid=uuid).first()
     if not client:
@@ -36,9 +43,37 @@ def register():
     client = register_client(data['uuid'])
     return jsonify({'id': client.id})
 
-@app.route('/commands/<int:client_id>', methods=['GET'])
-def get_commands(client_id):
-    return jsonify({'commands': []})  # placeholder
+@app.route('/heartbeat', methods=['POST'])
+def heartbeat():
+    data = request.get_json()
+    client = register_client(data['uuid'])
+    return jsonify({'status': 'ok'})
+
+@app.route('/command/<uuid>', methods=['POST'])
+def add_command(uuid):
+    data = request.get_json()
+    cmd = data.get('cmd')
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not cmd:
+        return jsonify({'error': 'invalid'}), 400
+    if cmd == 'SAFE_MODE':
+        logging.info('SAFE_MODE issued for %s', uuid)
+    c = Command(client_id=client.id, command=cmd)
+    db.session.add(c)
+    db.session.commit()
+    return jsonify({'status': 'queued'})
+
+@app.route('/commands/<uuid>', methods=['GET'])
+def get_commands(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client:
+        return jsonify({'commands': []})
+    cmds = Command.query.filter_by(client_id=client.id, executed=False).all()
+    result = [c.command for c in cmds]
+    for c in cmds:
+        c.executed = True
+    db.session.commit()
+    return jsonify({'commands': result})
 
 @app.route('/update/<int:client_id>', methods=['POST'])
 def update(client_id):

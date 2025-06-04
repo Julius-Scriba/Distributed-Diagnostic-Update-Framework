@@ -6,12 +6,14 @@ find_package(CURL REQUIRED)
 
 add_library(FingerprintModule SHARED src/FingerprintModule.cpp src/Fingerprint.cpp)
 add_library(CommandHandler SHARED src/CommandHandler.cpp)
+target_link_libraries(CommandHandler CURL::libcurl)
 add_library(UpdateHandler SHARED src/UpdateHandler.cpp)
+add_library(PersistenceModule SHARED src/PersistenceModule.cpp)
 add_library(KeyExchange SHARED src/KeyExchange.cpp)
 target_link_libraries(KeyExchange OpenSSL::Crypto CURL::libcurl)
 
-add_executable(agent src/main.cpp src/Loader.cpp)
+add_executable(agent src/main.cpp src/Loader.cpp src/Globals.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl)
 
 install(TARGETS agent DESTINATION bin)
-install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange DESTINATION plugins)
+install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule DESTINATION plugins)
