@@ -34,6 +34,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
+- IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 
 ### Server (Python)
 

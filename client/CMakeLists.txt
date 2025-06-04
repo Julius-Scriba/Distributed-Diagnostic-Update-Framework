@@ -15,6 +15,8 @@ add_library(PersistenceModule SHARED src/PersistenceModule.cpp)
 add_library(KeyExchange SHARED src/KeyExchange.cpp)
 target_link_libraries(KeyExchange OpenSSL::Crypto CURL::libcurl)
 
+add_library(IPC SHARED src/IPCServer.cpp)
+
 add_library(CmdSafeMode SHARED src/CommandSafeMode.cpp)
 add_library(CmdDeepSleep SHARED src/CommandDeepSleep.cpp)
 add_library(CmdWipe SHARED src/CommandWipe.cpp)
@@ -26,4 +28,4 @@ add_executable(agent src/main.cpp src/Loader.cpp src/Globals.cpp src/Wipe.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore)
 
 install(TARGETS agent DESTINATION bin)
-install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule CmdSafeMode CmdDeepSleep CmdWipe DESTINATION plugins)
+install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule CmdSafeMode CmdDeepSleep CmdWipe IPC DESTINATION plugins)

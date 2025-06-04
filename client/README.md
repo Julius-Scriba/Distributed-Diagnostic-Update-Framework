@@ -17,3 +17,10 @@ Empfängt der `CommandHandler` vom Server den Befehl `SAFE_MODE`, werden alle Ak
 
 ## Deep Sleep und Wipe
 `DEEP_SLEEP` stoppt alle Module und reduziert den Heartbeat auf stündliche Meldungen. Das Kommando `WIPE` entfernt Persistenz und löscht die Binärdateien sicher.
+
+## IPC-Basis
+Ein neues IPC-Framework stellt eine Named-Pipe `\\.\pipe\US_IPC_CORE` bereit. Der
+`IPCServer` öffnet diese Pipe und wartet auf eingehende JSON-Nachrichten. Module
+können über `IPCClient::send(json)` Daten an den Server schicken. Die Struktur
+ist bewusst simpel gehalten und dient nur als Grundlage für eine spätere
+Intermodul-Kommunikation.
