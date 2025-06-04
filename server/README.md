@@ -18,6 +18,16 @@ POST /heartbeat
 { "uuid": "<client uuid>" }
 ```
 
+Der Server speichert den Zeitpunkt des letzten Heartbeats pro Client. Ist kein neuer Heartbeat innerhalb von 180 Sekunden eingegangen, wechselt der Client-Status auf **offline**.
+
+### Client-Status
+Der aktuelle Zustand kann über folgenden Endpunkt abgefragt werden:
+
+```
+GET /status/<uuid>
+-> { "uuid": "<uuid>", "status": "online", "last_seen": "2025-06-04T10:00:00" }
+```
+
 ## Kommandos
 ```
 POST /command/<uuid>

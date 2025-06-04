@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import base64
 import os
@@ -14,12 +14,15 @@ db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO)
 
+TIMEOUT_SECONDS = 180
+
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(64), unique=True, nullable=False)
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     public_key = db.Column(db.Text)
     aes_key = db.Column(db.Text)
+    online = db.Column(db.Boolean, default=False)
 
 class Command(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,12 +31,24 @@ class Command(db.Model):
     executed = db.Column(db.Boolean, default=False)
 
 
+def check_timeouts():
+    now = datetime.utcnow()
+    threshold = now - timedelta(seconds=TIMEOUT_SECONDS)
+    outdated = Client.query.filter(Client.last_seen < threshold, Client.online == True).all()
+    for c in outdated:
+        c.online = False
+    if outdated:
+        db.session.commit()
+
+
 def register_client(uuid):
+    check_timeouts()
     client = Client.query.filter_by(uuid=uuid).first()
     if not client:
         client = Client(uuid=uuid)
         db.session.add(client)
     client.last_seen = datetime.utcnow()
+    client.online = True
     db.session.commit()
     return client
 
@@ -97,6 +112,17 @@ def key_exchange():
     client.aes_key = base64.b64encode(aes_key).decode()
     db.session.commit()
     return jsonify({'aes_key': base64.b64encode(enc_key).decode()})
+
+
+@app.route('/status/<uuid>', methods=['GET'])
+def status(uuid):
+    check_timeouts()
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client:
+        return jsonify({'error': 'unknown'}), 404
+    state = 'online' if client.online else 'offline'
+    last = client.last_seen.isoformat() if client.last_seen else None
+    return jsonify({'uuid': uuid, 'status': state, 'last_seen': last})
 
 if __name__ == '__main__':
     db.create_all()

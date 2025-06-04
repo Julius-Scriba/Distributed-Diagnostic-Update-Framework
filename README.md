@@ -37,6 +37,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 
 - REST-API (Flask)
 - Agent-Registrierung & Heartbeats
+- Online-Status mit Timeout (180s)
 - Kommandomodul pro Client
 - Persistente Datenhaltung (SQLite, vorbereitbar für PostgreSQL)
 - Loggingsystem
@@ -72,6 +73,7 @@ cd ../../server
 pip install -r requirements.txt
 python app.py
 ```
+Der Server speichert pro Client den Zeitpunkt des letzten Heartbeats. Über `/status/<uuid>` lässt sich der Online-Status abrufen.
 
 Der Client sendet beim ersten Start seinen RSA-Public-Key an `/key_exchange` und
 erhält einen AES-256-Schlüssel zurück, der für die weitere Kommunikation
