@@ -95,3 +95,13 @@ beim `CommandRegistry` an.
 Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
 `/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der
 API-Schlüssel wird via `X-API-KEY` Header übermittelt.
+
+### Web UI
+
+A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. Start the development server with:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
