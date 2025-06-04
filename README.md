@@ -27,6 +27,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Fingerprinting: Erfasst Diagnosedaten (System, UUID etc.)
 - Update-Handler: Führt Remote-Updates durch
 - Command-Handler: Empfängt und verarbeitet Steuerkommandos
+  - Kommandos werden pluginbasiert über eine Registry geladen
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
 - Key-Exchange: RSA-4096 initialer Schluessel
 - Persistenz via Run-Key und Task-Scheduler
@@ -78,6 +79,14 @@ Der Server speichert pro Client den Zeitpunkt des letzten Heartbeats. Über `/st
 Der Client sendet beim ersten Start seinen RSA-Public-Key an `/key_exchange` und
 erhält einen AES-256-Schlüssel zurück, der für die weitere Kommunikation
 genutzt wird.
+
+Kommandos werden nun als JSON-Objekt in der Form
+
+```
+{ "command": "SAFE_MODE", "parameters": {}}
+```
+übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
+beim `CommandRegistry` an.
 
 Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
 `/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der

