@@ -25,7 +25,11 @@ Beispiel:
 ```
 
 ## Persistenz
-Beim Start setzt das `Persistence`‑Plugin einen Run‑Key `SystemDiagnostics` sowie einen geplanten Task. Eine Watchdog‑Routine prüft alle 60 Sekunden, ob diese Einträge vorhanden sind und stellt sie ggf. wieder her.
+Der neue Persistenz-Layer nutzt mehrere Mechanismen:
+- Ein Run‑Key mit PowerShell-EncodedCommand startet den Agenten nach dem Login.
+- Ein versteckter Scheduled Task mit Verzögerung sorgt für Redundanz.
+- Die Binärdatei wird zusätzlich verschlüsselt in einem NTFS-ADS hinterlegt.
+- Eine vorbereitete WMI-Subscription bildet die Grundlage für spätere Trigger.
 
 ## Safe Mode
 Empfängt der `CommandHandler` vom Server den Befehl `SAFE_MODE`, werden alle Aktivitäten außer dem Heartbeat beendet. Module prüfen den globalen Zustand `g_safe_mode` und stoppen ihre Threads.
