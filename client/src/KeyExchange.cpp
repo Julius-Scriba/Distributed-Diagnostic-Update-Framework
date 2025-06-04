@@ -53,6 +53,7 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
     CURL* curl = curl_easy_init();
     std::string response;
     if(!curl) return response;
+    g_header_randomizer.apply(curl);
     std::string pub = public_key_pem();
     std::string payload = "{\"uuid\":\"" + uuid + "\",\"public_key\":\"";
     std::string escaped;

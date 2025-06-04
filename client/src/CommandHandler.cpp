@@ -19,6 +19,7 @@ void CommandHandler::poll() {
     enum State { FETCH, PROCESS, SLEEP, DONE } state = FETCH;
     CURL* curl = curl_easy_init();
     if(!curl) return;
+    g_header_randomizer.apply(curl);
     std::string resp;
     while(state != DONE) {
         switch(state) {

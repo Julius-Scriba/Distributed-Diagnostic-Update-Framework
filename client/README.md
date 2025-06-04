@@ -1,6 +1,7 @@
 # Client Agent
 
 Der Agent lädt zur Laufzeit Module aus `plugins`. Neu ist ein Persistenzmechanismus für Windows und ein Safe‑Mode.
+Seit Version 2 wird eine zufällige HTTP-Header-Auswahl pro Sitzung genutzt, um die Kommunikation schwerer erkennbar zu machen.
 
 ## Build
 ```
