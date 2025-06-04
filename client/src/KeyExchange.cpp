@@ -53,7 +53,8 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
     CURL* curl = curl_easy_init();
     std::string response;
     if(!curl) return response;
-    g_header_randomizer.apply(curl);
+    struct curl_slist* headers = g_header_randomizer.build_list();
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     std::string pub = public_key_pem();
     std::string payload = "{\"uuid\":\"" + uuid + "\",\"public_key\":\"";
     std::string escaped;
@@ -69,6 +70,7 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_perform(curl);
+    curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     return response;
 }
@@ -97,6 +99,7 @@ g_uuid = fp.uuid;
         return;
     }
     aes_key_.assign((char*)out.data(), len);
+    g_request_signer.set_key(aes_key_);
 }
 
 #ifndef STATIC_AGENT

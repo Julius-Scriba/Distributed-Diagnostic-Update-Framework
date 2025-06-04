@@ -1,7 +1,7 @@
 #include "HttpHeaderRandomizer.h"
 #include <random>
 
-HttpHeaderRandomizer::HttpHeaderRandomizer() : header_list_(nullptr) {
+HttpHeaderRandomizer::HttpHeaderRandomizer() {
     user_agents_ = {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0 Safari/537.36",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Safari/605.1.15",
@@ -45,19 +45,17 @@ HttpHeaderRandomizer::HttpHeaderRandomizer() : header_list_(nullptr) {
     conn_ = connection_[gen() % connection_.size()];
     encoding_ = accept_encoding_[gen() % accept_encoding_.size()];
 
-    header_list_ = curl_slist_append(header_list_, ("User-Agent: " + ua_).c_str());
-    header_list_ = curl_slist_append(header_list_, ("Accept-Language: " + lang_).c_str());
-    header_list_ = curl_slist_append(header_list_, ("Cache-Control: " + cache_).c_str());
-    header_list_ = curl_slist_append(header_list_, ("Connection: " + conn_).c_str());
-    header_list_ = curl_slist_append(header_list_, ("Accept-Encoding: " + encoding_).c_str());
+    headers_.push_back("User-Agent: " + ua_);
+    headers_.push_back("Accept-Language: " + lang_);
+    headers_.push_back("Cache-Control: " + cache_);
+    headers_.push_back("Connection: " + conn_);
+    headers_.push_back("Accept-Encoding: " + encoding_);
 }
 
-HttpHeaderRandomizer::~HttpHeaderRandomizer() {
-    if(header_list_) curl_slist_free_all(header_list_);
-}
-
-void HttpHeaderRandomizer::apply(CURL* curl) const {
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list_);
+struct curl_slist* HttpHeaderRandomizer::build_list() const {
+    struct curl_slist* list = nullptr;
+    for(const auto& h : headers_) list = curl_slist_append(list, h.c_str());
+    return list;
 }
 
 HttpHeaderRandomizer g_header_randomizer;

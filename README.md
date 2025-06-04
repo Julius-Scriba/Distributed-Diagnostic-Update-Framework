@@ -36,6 +36,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
 - Zufällige HTTP-Header pro Client-Session zur Stealth-Kommunikation
 - Vorbereitung für Domain Fronting mit konfigurierbaren Zieladressen
+- HMAC-Signaturen mit Nonce- und Timestamp-Prüfung gegen Replay-Attacken
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
 

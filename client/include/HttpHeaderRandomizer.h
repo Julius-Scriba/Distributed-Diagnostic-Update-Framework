@@ -6,8 +6,7 @@
 class HttpHeaderRandomizer {
 public:
     HttpHeaderRandomizer();
-    ~HttpHeaderRandomizer();
-    void apply(CURL* curl) const;
+    struct curl_slist* build_list() const;
 private:
     std::vector<std::string> user_agents_;
     std::vector<std::string> accept_lang_;
@@ -20,7 +19,7 @@ private:
     std::string cache_;
     std::string conn_;
     std::string encoding_;
-    struct curl_slist* header_list_;
+    std::vector<std::string> headers_;
 };
 
 extern HttpHeaderRandomizer g_header_randomizer;

@@ -71,6 +71,15 @@ POST /admin/command/<uuid>
 ```
 Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
 
+## API Hardening
+Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
+
+- `X-ULTSPY-Signature`
+- `X-ULTSPY-Nonce`
+- `X-ULTSPY-Timestamp`
+
+Der Server verifiziert die Signatur anhand des pro Client hinterlegten AES-Schlüssels, prüft die Zeitabweichung (±60s) und lehnt doppelte Nonces ab.
+
 ```
 pip install -r requirements.txt
 python app.py

@@ -11,3 +11,6 @@ extern HttpHeaderRandomizer g_header_randomizer;
 
 #include "ConfigModule.h"
 extern AgentConfig g_agent_config;
+
+#include "RequestSigner.h"
+extern RequestSigner g_request_signer;

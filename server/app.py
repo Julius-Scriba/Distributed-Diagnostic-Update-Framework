@@ -5,6 +5,8 @@ import logging
 import base64
 import os
 import json
+import hmac
+import hashlib
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
@@ -49,6 +51,54 @@ def check_host_header():
         logging.warning('Blocked request with host %s', host)
         abort(404)
 
+NONCE_WINDOW = 50
+
+@app.before_request
+def verify_request():
+    if request.path in ('/key_exchange',) or request.path.startswith('/admin') or request.path.startswith('/config'):
+        return
+    uuid = None
+    if request.view_args:
+        uuid = request.view_args.get('uuid')
+    if not uuid:
+        data = request.get_json(silent=True) or {}
+        uuid = data.get('uuid')
+    if not uuid:
+        return
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        abort(401)
+    sig = request.headers.get('X-ULTSPY-Signature')
+    nonce = request.headers.get('X-ULTSPY-Nonce')
+    ts = request.headers.get('X-ULTSPY-Timestamp')
+    if not sig or not nonce or not ts:
+        abort(401)
+    try:
+        ts_int = int(ts)
+    except ValueError:
+        abort(401)
+    if abs(datetime.utcnow().timestamp() - ts_int) > 60:
+        logging.warning('Timestamp mismatch for %s', uuid)
+        abort(401)
+    if NonceRecord.query.filter_by(client_id=client.id, nonce=nonce).first():
+        logging.warning('Replay attack for %s', uuid)
+        abort(401)
+    url = request.base_url
+    if request.query_string:
+        url += '?' + request.query_string.decode()
+    body = request.get_data(as_text=True) if request.method != 'GET' else ''
+    message = f"{request.method}\n{url}\n{ts}\n{body}"
+    key = base64.b64decode(client.aes_key)
+    expected = hmac.new(key, message.encode(), hashlib.sha256).digest()
+    expected_b64 = base64.b64encode(expected).decode()
+    if not hmac.compare_digest(expected_b64, sig):
+        logging.warning('Bad signature for %s', uuid)
+        abort(401)
+    db.session.add(NonceRecord(client_id=client.id, nonce=nonce))
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
+    NonceRecord.query.filter(NonceRecord.created_at < cutoff).delete()
+    db.session.commit()
+
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(64), unique=True, nullable=False)
@@ -68,6 +118,12 @@ class LogEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
     message = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class NonceRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    nonce = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 def log_event(client, message):

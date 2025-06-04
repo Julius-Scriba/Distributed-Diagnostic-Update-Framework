@@ -2,6 +2,7 @@
 
 Der Agent lädt zur Laufzeit Module aus `plugins`. Neu ist ein Persistenzmechanismus für Windows und ein Safe‑Mode.
 Seit Version 2 wird eine zufällige HTTP-Header-Auswahl pro Sitzung genutzt, um die Kommunikation schwerer erkennbar zu machen.
+Ab Version 4 werden alle HTTP-Aufrufe mit einer HMAC-SHA256 Signatur versehen. Ein Nonce und Timestamp verhindern Replay-Attacken.
 Ab Version 3 liest ein neues `ConfigModule` Einstellungen aus `agent_config.json`, sodass Ziel-URLs und Host-Header flexibel gesetzt werden können.
 
 ## Build
