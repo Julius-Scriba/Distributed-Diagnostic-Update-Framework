@@ -33,6 +33,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Persistenz via Run-Key und Task-Scheduler
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
+- Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
 
 ### Server (Python)
 
