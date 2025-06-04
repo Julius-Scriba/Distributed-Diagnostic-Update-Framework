@@ -1,17 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import api from './api';
-
-interface Agent {
-  uuid: string;
-  online: boolean;
-  last_seen: string;
-}
+import { Link } from 'react-router-dom';
+import useAgents from './api/useAgents';
 
 export default function Dashboard() {
-  const { data } = useQuery({
-    queryKey: ['agents'],
-    queryFn: async () => (await api.get<Agent[]>('/admin/agents')).data,
-  });
+  const { data } = useAgents();
 
   return (
     <div className="p-4 text-white">
@@ -27,7 +18,9 @@ export default function Dashboard() {
         <tbody>
           {data?.map(a => (
             <tr key={a.uuid} className="text-center">
-              <td className="py-1 px-2">{a.uuid}</td>
+              <td className="py-1 px-2">
+                <Link className="text-blue-400 hover:underline" to={`/agents/${a.uuid}`}>{a.uuid}</Link>
+              </td>
               <td>{a.online ? 'Online' : 'Offline'}</td>
               <td>{a.last_seen}</td>
             </tr>
