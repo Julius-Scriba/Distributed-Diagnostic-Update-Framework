@@ -39,6 +39,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - HMAC-Signaturen mit Nonce- und Timestamp-Prüfung gegen Replay-Attacken
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
+- Vorbereitende Anti-Forensik Stubs (Process Hollowing & PPID Spoofing)
 
 ### Server (Python)
 

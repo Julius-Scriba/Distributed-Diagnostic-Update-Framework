@@ -43,3 +43,6 @@ Ein neues IPC-Framework stellt eine Named-Pipe `\\.\pipe\US_IPC_CORE` bereit. De
 können über `IPCClient::send(json)` Daten an den Server schicken. Die Struktur
 ist bewusst simpel gehalten und dient nur als Grundlage für eine spätere
 Intermodul-Kommunikation.
+
+## Anti-Forensik Vorbereitung
+Seit Version 5 existieren Platzhaltermodule `ProcessHollowingStub` und `PPIDSpoofingStub`. Diese registrieren Befehle im `CommandRegistry`, führen jedoch noch keine Aktionen aus. Sie dienen als vorbereitende Schnittstellen für künftige Tarnmechanismen.

