@@ -105,7 +105,7 @@ API-Schlüssel wird via `X-API-KEY` Header übermittelt.
 
 ### Web UI
 
- A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. The **Agents** page retrieves data from `/admin/agents` and shows the online state of each client.
+ A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. The **Agents** page retrieves data from `/admin/agents` and shows the online state of each client. The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via `/admin/command/<uuid>`.
  Start the development server with:
 
 ```bash
