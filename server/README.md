@@ -48,6 +48,13 @@ GET /payload/<uuid>/<module>
 ```
 Der Server liefert verschlüsselte Module, welche der gehärtete Loader im Arbeitsspeicher entschlüsselt und lädt.
 
+## Recon Daten
+``` 
+POST /recon/<uuid>
+{ "data": "<base64 AES(iv+json)>" }
+```
+Der verschlüsselte Recon-Bericht wird gespeichert und kann zu Debug-Zwecken entschlüsselt ausgegeben werden.
+
 ## Admin Endpoints
 
 Für administrative Aufgaben steht ein einfacher API-Key geschützter Zugriff zur Verfügung. Der Key wird über den HTTP-Header `X-API-KEY` übermittelt.

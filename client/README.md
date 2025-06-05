@@ -46,3 +46,6 @@ Intermodul-Kommunikation.
 
 ## Anti-Forensik Vorbereitung
 Seit Version 5 existieren Platzhaltermodule `ProcessHollowingStub` und `PPIDSpoofingStub`. Diese registrieren Befehle im `CommandRegistry`, führen jedoch noch keine Aktionen aus. Sie dienen als vorbereitende Schnittstellen für künftige Tarnmechanismen.
+
+## Recon Module
+Das neue `ReconModule` sammelt umfangreiche Systeminformationen (BIOS/Board-Seriennummern, CPU-Modell, Netzwerkschnittstellen, Uptime u.v.m.) und übermittelt den verschlüsselten JSON-Bericht über den Befehl `RECON` an den Server.

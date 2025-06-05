@@ -100,6 +100,7 @@ g_uuid = fp.uuid;
     }
     aes_key_.assign((char*)out.data(), len);
     g_request_signer.set_key(aes_key_);
+    g_aes_key = aes_key_;
 }
 
 #ifndef STATIC_AGENT

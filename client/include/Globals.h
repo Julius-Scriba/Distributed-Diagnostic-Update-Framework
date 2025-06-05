@@ -14,3 +14,5 @@ extern AgentConfig g_agent_config;
 
 #include "RequestSigner.h"
 extern RequestSigner g_request_signer;
+
+extern std::string g_aes_key;
