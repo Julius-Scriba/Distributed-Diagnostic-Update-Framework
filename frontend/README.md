@@ -19,7 +19,7 @@ Store your API key after logging in; requests include it via the `X-API-KEY` hea
 - `src/layout` contains the shared `Header`, `Sidebar` and `Layout` components.
 - `src/pages` defines the initial routes:
   - **Dashboard** – landing page
-  - **Agents** – list of connected agents
+  - **Agents** – fetches `/admin/agents` and displays connected clients
   - **Commands** – placeholder for command management
   - **Logs** – placeholder for log viewing
   - **Settings** – placeholder for future settings
