@@ -19,7 +19,7 @@ The development server proxies API requests to `http://localhost:5000`. Store yo
   - **Agents** – lists `/admin/agents`
   - **Commands** – manage the queued commands per agent
   - **Logs** – display recon reports and server logs per agent
-  - **Settings** – placeholder for future settings
+  - **Settings** – displays the current backend configuration via `/admin/config`
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
 
@@ -51,3 +51,8 @@ GET /admin/logs/<uuid>
 ```
 
 Select an agent from the dropdown to load its logs. Each row shows a timestamp, the log type and a short description. If raw data is available it can be expanded in place.
+
+## Settings Interface
+
+The **Settings** page fetches the current backend configuration using `/admin/config`.
+Heartbeat timeouts, allowed hosts and other details are displayed in a table and the build versions are shown at the top.

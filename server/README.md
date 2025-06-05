@@ -89,6 +89,19 @@ POST /admin/command/<uuid>
 ```
 Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
 
+### Aktuelle Server-Konfiguration
+```
+GET /admin/config
+-> {
+     "api_keys": ["default"],
+     "heartbeat_timeout": 180,
+     "versions": {"backend": "dev", "frontend": "0.0.0"},
+     "targets": ["localhost"],
+     "allowed_hosts": ["localhost"]
+   }
+```
+Listet die wichtigsten Einstellungen des Backends wie Heartbeat-Timeout und konfigurierte Zielhosts auf. Die API-Keys werden nur maskiert ausgegeben.
+
 ## API Hardening
 Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
 

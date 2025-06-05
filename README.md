@@ -103,7 +103,7 @@ Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`
 
 ### Web UI
 
- A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. The **Agents** page retrieves data from `/admin/agents` and shows the online state of each client. The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und Überwachungsdaten über `/admin/logs/<uuid>`.
+A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. The **Agents** page retrieves data from `/admin/agents` and shows the online state of each client. The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft `/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
  Start the development server with:
 
 ```bash

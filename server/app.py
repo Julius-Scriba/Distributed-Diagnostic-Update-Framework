@@ -23,6 +23,14 @@ logging.basicConfig(level=logging.INFO)
 
 TIMEOUT_SECONDS = 180
 ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
+BACKEND_VERSION = os.environ.get('BACKEND_VERSION', 'dev')
+FRONTEND_VERSION = 'unknown'
+try:
+    pkg_path = os.path.join(os.path.dirname(__file__), '../frontend/package.json')
+    with open(pkg_path, 'r') as f:
+        FRONTEND_VERSION = json.load(f).get('version', 'unknown')
+except Exception:
+    pass
 
 CONFIG = {}
 ALLOWED_HOSTS = []
@@ -330,6 +338,21 @@ def status(uuid):
 @app.route('/config/targets', methods=['GET'])
 def list_targets():
     return jsonify({'targets': ALLOWED_HOSTS})
+
+
+@app.route('/admin/config', methods=['GET'])
+@require_api_key
+def admin_config():
+    return jsonify({
+        'api_keys': ['default'],
+        'heartbeat_timeout': TIMEOUT_SECONDS,
+        'versions': {
+            'backend': BACKEND_VERSION,
+            'frontend': FRONTEND_VERSION,
+        },
+        'targets': ALLOWED_HOSTS,
+        'allowed_hosts': ALLOWED_HOSTS,
+    })
 
 
 @app.route('/admin/agents', methods=['GET'])
