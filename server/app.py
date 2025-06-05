@@ -146,6 +146,13 @@ class SurveillanceData(db.Model):
     data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class Template(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    command = db.Column(db.String(64), nullable=False)
+    parameters = db.Column(db.Text, default='{}')
+
 def log_event(client, message):
     entry = LogEntry(client_id=client.id, message=message)
     db.session.add(entry)
@@ -410,6 +417,56 @@ def agent_logs(uuid):
 @require_api_key
 def admin_command(uuid):
     return add_command(uuid)
+
+
+@app.route('/admin/templates', methods=['GET'])
+@require_api_key
+def list_templates():
+    entries = Template.query.all()
+    result = []
+    for t in entries:
+        params = json.loads(t.parameters) if t.parameters else {}
+        result.append({
+            'template_id': t.template_id,
+            'name': t.name,
+            'command': t.command,
+            'parameters': params,
+        })
+    return jsonify({'templates': result})
+
+
+@app.route('/admin/templates', methods=['POST'])
+@require_api_key
+def create_template():
+    data = request.get_json(force=True)
+    name = data.get('name')
+    command = data.get('command')
+    params = data.get('parameters', {})
+    if not name or not command:
+        return jsonify({'error': 'invalid'}), 400
+    if Template.query.filter_by(name=name).first():
+        return jsonify({'error': 'duplicate'}), 409
+    tid = base64.urlsafe_b64encode(os.urandom(12)).decode()
+    entry = Template(
+        template_id=tid,
+        name=name,
+        command=command,
+        parameters=json.dumps(params),
+    )
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify({'template_id': tid})
+
+
+@app.route('/admin/templates/<tid>', methods=['DELETE'])
+@require_api_key
+def delete_template(tid):
+    entry = Template.query.filter_by(template_id=tid).first()
+    if not entry:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({'status': 'deleted'})
 
 if __name__ == '__main__':
     with app.app_context():

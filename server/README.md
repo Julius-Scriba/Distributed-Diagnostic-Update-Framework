@@ -102,6 +102,24 @@ GET /admin/config
 ```
 Listet die wichtigsten Einstellungen des Backends wie Heartbeat-Timeout und konfigurierte Zielhosts auf. Die API-Keys werden nur maskiert ausgegeben.
 
+### Kommando-Templates
+
+Wiederkehrende Befehle lassen sich als Vorlage speichern und später schnell abrufen:
+
+```
+GET /admin/templates
+-> { "templates": [{"template_id":"...","name":"Daily Recon","command":"RECON","parameters":{}}] }
+
+POST /admin/templates
+{ "name": "Daily Recon", "command": "RECON", "parameters": {} }
+-> { "template_id": "<id>" }
+
+DELETE /admin/templates/<template_id>
+-> { "status": "deleted" }
+```
+
+Der Name eines Templates muss eindeutig sein. Bei Dopplern liefert der Server `409 Conflict`.
+
 ## API Hardening
 Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
 

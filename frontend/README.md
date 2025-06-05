@@ -20,6 +20,7 @@ The development server proxies API requests to `http://localhost:5000`. Store yo
   - **Commands** – manage the queued commands per agent
   - **Logs** – display recon reports and server logs per agent
   - **Settings** – displays the current backend configuration via `/admin/config`
+  - **Templates** – manage reusable command templates
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
 
@@ -56,3 +57,21 @@ Select an agent from the dropdown to load its logs. Each row shows a timestamp, 
 
 The **Settings** page fetches the current backend configuration using `/admin/config`.
 Heartbeat timeouts, allowed hosts and other details are displayed in a table and the build versions are shown at the top.
+
+## Templates Interface
+
+The **Templates** page manages reusable command definitions that can be quickly
+queued for agents.
+
+```
+GET /admin/templates
+-> { "templates": [{"template_id":"...","name":"Recon","command":"RECON","parameters":{}}] }
+
+POST /admin/templates
+{ "name": "Recon", "command": "RECON", "parameters": {} }
+
+DELETE /admin/templates/<template_id>
+```
+
+Templates consist of a name, a command and optional JSON parameters. Duplicate
+names are rejected with `409 Conflict`.

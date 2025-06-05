@@ -4,6 +4,7 @@ const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/agents', label: 'Agents' },
   { to: '/commands', label: 'Commands' },
+  { to: '/templates', label: 'Templates' },
   { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },
 ];
