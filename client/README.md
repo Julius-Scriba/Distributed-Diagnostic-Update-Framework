@@ -49,3 +49,6 @@ Seit Version 5 existieren Platzhaltermodule `ProcessHollowingStub` und `PPIDSpoo
 
 ## Recon Module
 Das neue `ReconModule` sammelt umfangreiche Systeminformationen (BIOS/Board-Seriennummern, CPU-Modell, Netzwerkschnittstellen, Uptime u.v.m.) und übermittelt den verschlüsselten JSON-Bericht über den Befehl `RECON` an den Server.
+
+## Active Surveillance Module
+`ActiveSurveillanceModule` listet laufende Prozesse inklusive Pfad und SHA256, liest Autostart-Einträge und aktive Dienste aus und sendet die Daten verschlüsselt über den Befehl `SURVEILLANCE`.

@@ -55,6 +55,13 @@ POST /recon/<uuid>
 ```
 Der verschlüsselte Recon-Bericht wird gespeichert und kann zu Debug-Zwecken entschlüsselt ausgegeben werden.
 
+## Active Surveillance Report
+```
+POST /surveillance_report/<uuid>
+{ "data": "<base64 AES(iv+json)>" }
+```
+Der verschlüsselte Überwachungsbericht enthält laufende Prozesse, Autoruns und Sicherheitsinformationen.
+
 ## Admin Endpoints
 
 Für administrative Aufgaben steht ein einfacher API-Key geschützter Zugriff zur Verfügung. Der Key wird über den HTTP-Header `X-API-KEY` übermittelt.
