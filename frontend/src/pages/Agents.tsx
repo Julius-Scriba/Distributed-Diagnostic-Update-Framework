@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import useAgents from './api/useAgents';
+import useAgents from '../api/useAgents';
 
-export default function Dashboard() {
+export default function Agents() {
   const { data } = useAgents();
 
   return (
