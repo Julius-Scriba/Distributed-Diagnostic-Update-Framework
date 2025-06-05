@@ -350,13 +350,37 @@ def list_agents():
 @app.route('/admin/logs/<uuid>', methods=['GET'])
 @require_api_key
 def agent_logs(uuid):
+    """Return recon reports, surveillance data and log messages for an agent."""
     client = Client.query.filter_by(uuid=uuid).first()
     if not client:
         return jsonify({'logs': []})
-    logs = LogEntry.query.filter_by(client_id=client.id).order_by(LogEntry.created_at.desc()).all()
-    return jsonify({'logs': [
-        {'message': l.message, 'timestamp': l.created_at.isoformat()} for l in logs
-    ]})
+
+    entries = []
+    for l in LogEntry.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': l.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Info',
+            'description': l.message,
+        })
+
+    for r in ReconData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': r.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Recon',
+            'description': 'Recon data',
+            'data': r.data,
+        })
+
+    for s in SurveillanceData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': s.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Surveillance',
+            'description': 'Surveillance report',
+            'data': s.data,
+        })
+
+    entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    return jsonify({'logs': entries})
 
 
 @app.route('/admin/command/<uuid>', methods=['POST'])

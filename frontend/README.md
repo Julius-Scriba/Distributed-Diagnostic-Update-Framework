@@ -18,7 +18,7 @@ The development server proxies API requests to `http://localhost:5000`. Store yo
   - **Dashboard** – landing page
   - **Agents** – lists `/admin/agents`
   - **Commands** – manage the queued commands per agent
-  - **Logs** – placeholder for log viewing
+  - **Logs** – display recon reports and server logs per agent
   - **Settings** – placeholder for future settings
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
@@ -40,3 +40,14 @@ Open the **Commands** page to inspect or modify the command queue for a specific
    A confirmation is shown on success.
 
 Invalid JSON parameters are reported to the user. All requests include the stored API key via the `X-API-KEY` header.
+
+## Logs Interface
+
+On the **Logs** page operators can inspect recon reports and other server logs for a selected agent.
+
+```
+GET /admin/logs/<uuid>
+-> { "logs": [{"timestamp":"...","type":"Recon","description":"Recon data","data":"{...}"}] }
+```
+
+Select an agent from the dropdown to load its logs. Each row shows a timestamp, the log type and a short description. If raw data is available it can be expanded in place.

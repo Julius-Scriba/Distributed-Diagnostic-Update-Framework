@@ -75,8 +75,12 @@ GET /admin/agents
 ### Logs eines Agents
 ```
 GET /admin/logs/<uuid>
--> { "logs": [{"message": "...", "timestamp": "..."}] }
+-> { "logs": [
+     {"timestamp":"2025-06-05T20:00:00Z","type":"Recon","description":"Recon data","data":"{...}"},
+     {"timestamp":"2025-06-05T20:01:00Z","type":"Info","description":"heartbeat"}
+   ] }
 ```
+Ein Eintrag enthält Zeitstempel (UTC), Typ des Eintrags (Recon, Surveillance, Info, Fehler usw.), eine Kurzbeschreibung und optional Rohdaten.
 
 ### Kommando pushen
 ```
