@@ -7,9 +7,13 @@ export interface Agent {
   last_seen: string;
 }
 
+interface AgentsResponse {
+  agents: Agent[];
+}
+
 export default function useAgents() {
   return useQuery({
     queryKey: ['agents'],
-    queryFn: async () => (await api.get<Agent[]>('/admin/agents')).data,
+    queryFn: async () => (await api.get<AgentsResponse>('/admin/agents')).data.agents,
   });
 }
