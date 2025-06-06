@@ -26,7 +26,7 @@ Use the **Logout** button in the header to clear the stored key manually.
 - `src/layout` contains the shared `Header`, `Sidebar` and `Layout` components.
 - `src/pages` defines the routes:
   - **Dashboard** – landing page
-  - **Agents** – lists `/admin/agents`
+  - **Agents** – lists `/admin/agents` with live updates every 15 seconds
   - **Commands** – manage the queued commands per agent
   - **Logs** – display recon reports and server logs per agent
   - **Settings** – displays the current backend configuration via `/admin/config`
@@ -41,6 +41,12 @@ always available. Loading indicators appear centered on each page and every
 route distinguishes loading, success and error states. Tables become scrollable
 on small screens and the active navigation link is highlighted with a subtle
 hover effect.
+
+## Live Agent Heartbeat
+
+The **Agents** page polls `/admin/agents` every 15 seconds to keep the list
+current. The "Last Seen" column shows how long ago an agent checked in
+using `date-fns` for relative timestamps.
 
 ## Commands Interface
 

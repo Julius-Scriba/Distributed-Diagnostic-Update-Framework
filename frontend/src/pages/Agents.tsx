@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import useAgents from '../api/useAgents';
 import Spinner from '../components/Spinner';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function Agents() {
   const { data, isLoading, isError } = useAgents();
@@ -32,7 +33,7 @@ export default function Agents() {
                   ></span>
                   {a.online ? 'Online' : 'Offline'}
                 </td>
-                <td>{a.last_seen}</td>
+                <td>{formatDistanceToNow(new Date(a.last_seen), { addSuffix: true })}</td>
               </tr>
             ))}
           </tbody>

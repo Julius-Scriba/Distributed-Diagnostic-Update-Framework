@@ -15,5 +15,7 @@ export default function useAgents() {
   return useQuery({
     queryKey: ['agents'],
     queryFn: async () => (await api.get<AgentsResponse>('/admin/agents')).data.agents,
+    refetchInterval: 15000,
+    staleTime: 15000,
   });
 }
