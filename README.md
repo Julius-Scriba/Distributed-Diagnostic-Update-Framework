@@ -46,6 +46,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
 - Kommando-Templates erleichtern wiederkehrende Steuerbefehle
 - Dynamischer Kommando-Dispatcher im Deploy-Build verarbeitet JSON-Befehle
+- Task Scheduler erlaubt verzögertes Ausführen von Kommandos
 
 ### Server (Python)
 

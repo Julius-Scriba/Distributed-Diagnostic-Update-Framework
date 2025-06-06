@@ -73,3 +73,6 @@ Im Deploy-Build prüft der `UpdateHandler` regelmäßig, ob unter `/payload/<uui
 
 ## Dynamischer Command Dispatcher
 Nur im deploybaren Build registriert der `DynamicDispatcher` die Kommandos `RECON_ADVANCED`, `SAFE_MODE`, `DEEP_SLEEP` und `WIPE`. Unbekannte Befehle werden geloggt, aber ignoriert. Dadurch bleibt die Steuerlogik flexibel und fehlertolerant.
+
+## Task Scheduler
+Eingehende Kommandos können ein `schedule`-Feld enthalten. Der `TaskScheduler` führt diese Befehle zeitverzögert aus. Unterstützt wird aktuell `delayed` mit optionalem `random_offset` in Sekunden. Offene Tasks werden nur im RAM gehalten und gehen bei Programmende verloren.

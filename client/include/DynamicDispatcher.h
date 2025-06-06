@@ -1,6 +1,7 @@
 #pragma once
 #include "Module.h"
 #include "CommandRegistry.h"
+#include "TaskScheduler.h"
 #include "json.hpp"
 class DynamicDispatcher : public Module {
 public:

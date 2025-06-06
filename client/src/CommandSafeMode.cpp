@@ -6,7 +6,7 @@ class SafeModeCmd : public CommandModule {
 public:
     std::string name() const override { return "CmdSafeMode"; }
     void init() override {
-        register_command("SAFE_MODE", [](const nlohmann::json&){
+        register_command("SAFE_MODE", [](const nlohmann::json& cmd){
             g_safe_mode.store(true);
             std::cout << "Entering safe mode" << std::endl;
         });
