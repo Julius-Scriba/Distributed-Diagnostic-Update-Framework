@@ -9,7 +9,13 @@ npm install
 npm run dev
 ```
 
-The development server proxies API requests to `http://localhost:5000`. Store your API key after logging in; requests include it via the `X-API-KEY` header.
+The development server proxies API requests to `http://localhost:5000`.
+
+## Login
+
+Open `/login` and enter your API key. It will be stored in `localStorage` under
+`ULTSPY_API_KEY`. All requests to `/admin/*` automatically include this key in
+the `X-API-KEY` header via an Axios interceptor.
 
 ## Project Structure
 

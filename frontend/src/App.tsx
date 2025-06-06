@@ -4,6 +4,8 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
+  Outlet,
 } from 'react-router-dom';
 import Login from './Login';
 import Layout from './layout/Layout';
@@ -17,15 +19,25 @@ import AgentDetail from './features/agents/AgentDetail';
 
 const queryClient = new QueryClient();
 
+function RequireAuth({ loggedIn }: { loggedIn: boolean }) {
+  return loggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('apiKey'));
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('ULTSPY_API_KEY'));
+
+  const handleLogout = () => {
+    localStorage.removeItem('ULTSPY_API_KEY');
+    setLoggedIn(false);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
-      {loggedIn ? (
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login onLogin={() => setLoggedIn(true)} />} />
+          <Route element={<RequireAuth loggedIn={loggedIn} />}>
+            <Route element={<Layout onLogout={handleLogout} />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/agents" element={<Agents />} />
               <Route path="/commands" element={<Commands />} />
@@ -34,11 +46,9 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/agents/:uuid" element={<AgentDetail />} />
             </Route>
-          </Routes>
-        </BrowserRouter>
-      ) : (
-        <Login onLogin={() => setLoggedIn(true)} />
-      )}
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

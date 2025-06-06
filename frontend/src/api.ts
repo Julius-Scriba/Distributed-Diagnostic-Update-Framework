@@ -5,9 +5,11 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(config => {
-  const apiKey = localStorage.getItem('apiKey');
-  if (apiKey) {
-    config.headers['X-API-KEY'] = apiKey;
+  if (config.url?.startsWith('/admin')) {
+    const apiKey = localStorage.getItem('ULTSPY_API_KEY');
+    if (apiKey) {
+      config.headers['X-API-KEY'] = apiKey;
+    }
   }
   return config;
 });

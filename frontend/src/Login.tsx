@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [key, setKey] = useState('');
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
       <div className="bg-gray-800 p-6 rounded shadow-md w-80">
@@ -16,8 +18,9 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded"
           onClick={() => {
-            localStorage.setItem('apiKey', key);
+            localStorage.setItem('ULTSPY_API_KEY', key);
             onLogin();
+            navigate('/');
           }}
         >
           Login
