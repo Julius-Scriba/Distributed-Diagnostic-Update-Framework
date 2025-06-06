@@ -17,9 +17,9 @@ const api = axios.create({
 
 api.interceptors.request.use(config => {
   if (config.url?.startsWith('/admin')) {
-    const apiKey = localStorage.getItem('ULTSPY_API_KEY');
-    if (apiKey) {
-      config.headers['X-API-KEY'] = apiKey;
+    const token = localStorage.getItem('ULTSPY_JWT');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
   }
   return config;

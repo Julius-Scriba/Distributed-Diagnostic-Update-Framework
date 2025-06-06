@@ -24,13 +24,13 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           onClick={async () => {
             setLoading(true);
             setError('');
-            localStorage.setItem('ULTSPY_API_KEY', key);
             try {
-              await api.get('/admin/config');
+              const res = await api.post('/login', { api_key: key });
+              localStorage.setItem('ULTSPY_JWT', res.data.token);
               onLogin();
               navigate('/');
             } catch {
-              localStorage.removeItem('ULTSPY_API_KEY');
+              localStorage.removeItem('ULTSPY_JWT');
               setError('Ungültiger API-Key oder keine Verbindung zum Server.');
             } finally {
               setLoading(false);

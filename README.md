@@ -101,17 +101,17 @@ Kommandos werden nun als JSON-Objekt in der Form
 übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
 beim `CommandRegistry` an.
 
-Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`, `/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der API-Schlüssel wird via `X-API-KEY` Header übermittelt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
+Administratoren melden sich nun über `/login` mit einem API-Key an und erhalten ein zeitlich begrenztes JWT. Dieses wird im `Authorization` Header an alle `/admin/*` Endpunkte angehängt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
 
 ### Web UI
 
 A React-based interface in `frontend/` allows operators to log in with their API
 key and manage agents. Open `/login` to enter the key; it is stored in
-`localStorage` under `ULTSPY_API_KEY` and automatically sent with all
-`/admin/*` requests. If the backend responds with `401 Unauthorized` the key is
-cleared and the user is redirected to `/login`. Network issues trigger a global
+`localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization`
+header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
+is removed and the user is redirected to `/login`. Network issues trigger a global
 "Verbindung zum Backend unterbrochen." banner.
-Operators can log out via the header button which clears the stored key.
+Operators can log out via the header button which clears the token.
 The **Agents** page retrieves data from `/admin/agents` and shows the online
 state. A colored badge marks its stability as **Stable**, **Warning**, **Degraded** or **Offline** depending on the last heartbeat.
 Clicking an entry opens `/agents/:uuid` with detailed information and a quick

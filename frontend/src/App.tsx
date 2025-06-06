@@ -26,12 +26,12 @@ function RequireAuth({ loggedIn }: { loggedIn: boolean }) {
 }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('ULTSPY_API_KEY'));
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('ULTSPY_JWT'));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      localStorage.removeItem('ULTSPY_API_KEY');
+      localStorage.removeItem('ULTSPY_JWT');
       setLoggedIn(false);
       window.location.href = '/login';
     });
@@ -39,7 +39,7 @@ export default function App() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('ULTSPY_API_KEY');
+    localStorage.removeItem('ULTSPY_JWT');
     setLoggedIn(false);
   };
 

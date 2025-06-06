@@ -13,13 +13,13 @@ The development server proxies API requests to `http://localhost:5000`.
 
 ## Login
 
-Open `/login` and enter your API key. It will be stored in `localStorage` under
-`ULTSPY_API_KEY`. All requests to `/admin/*` automatically include this key in
-the `X-API-KEY` header via an Axios interceptor.
-If a request fails with `401 Unauthorized`, the key is removed and you are
-redirected back to the login page. Network outages trigger a red banner saying
-"Verbindung zum Backend unterbrochen." at the top of the dashboard.
-Use the **Logout** button in the header to clear the stored key manually.
+Open `/login` and enter your API key. The key is verified by the backend and a
+JWT token is returned. This token is saved in `localStorage` under
+`ULTSPY_JWT` and automatically attached to all `/admin/*` requests via the
+`Authorization` header. If a request fails with `401 Unauthorized`, the token is
+removed and you are redirected back to the login page. Network outages trigger a
+red banner saying "Verbindung zum Backend unterbrochen." at the top of the
+dashboard. Use the **Logout** button in the header to clear the token manually.
 
 ## Project Structure
 
@@ -84,7 +84,7 @@ Open the **Commands** page to inspect or modify the command queue for a specific
    ```
    A confirmation is shown on success.
 
-Invalid JSON parameters are reported to the user. All requests include the stored API key via the `X-API-KEY` header.
+Invalid JSON parameters are reported to the user. All requests include the stored JWT via the `Authorization` header.
 
 ## Logs Interface
 

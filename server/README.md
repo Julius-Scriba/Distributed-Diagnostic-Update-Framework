@@ -64,7 +64,16 @@ Der verschlüsselte Überwachungsbericht enthält laufende Prozesse, Autoruns un
 
 ## Admin Endpoints
 
-Für administrative Aufgaben steht ein API-Key geschützter Zugriff zur Verfügung. Der Schlüssel wird über den HTTP-Header `X-API-KEY` mitgesendet. Bei fehlendem oder falschem Schlüssel antwortet der Server mit `401 Unauthorized`.
+### Login
+```
+POST /login
+{ "api_key": "changemeadmin" }
+-> { "token": "<jwt>" }
+```
+
+Das erhaltene JWT muss innerhalb einer Stunde verwendet werden.
+
+Administratoren melden sich über `/login` mit einem API-Key an und erhalten ein JWT. Dieses wird im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt. Abgelaufene oder ungültige Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
 
 ### Agents auflisten
 ```
@@ -134,16 +143,15 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Die API-Schlüssel werden in `config.json` definiert. Beispiel:
+Die API-Schlüssel werden in `config.json` definiert und dienen nur noch zur Ausstellung von JWTs:
 ```json
 {
-  "allowed_hosts": ["localhost", "example.cloudfront.net"],
-  "api_keys": {
-    "admin": "changemeadmin"
-  }
+  "allowed_hosts": ["localhost"],
+  "api_keys": {"admin": "changemeadmin"},
+  "jwt_secret": "change_this_secret"
 }
 ```
-Der passende Schlüssel muss bei Admin-Aufrufen im Header `X-API-KEY` übergeben werden. Bei falschem oder fehlendem Key antwortet der Server mit `401 Unauthorized`.
+Beim Login muss ein gültiger Schlüssel angegeben werden. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
 
 ## Domain Fronting Vorbereitung
 
