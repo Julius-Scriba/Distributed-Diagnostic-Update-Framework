@@ -33,6 +33,7 @@ dashboard. Use the **Logout** button in the header to clear the token manually.
   - **Settings** – displays the current backend configuration via `/admin/config`
   - **Templates** – manage reusable command templates
   - **API Keys** – create and revoke login keys
+  - **Audit Log** – view administrative login and key events
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
 
@@ -138,7 +139,9 @@ names are rejected with `409 Conflict`.
 
 The **API Keys** page lists all active keys and allows creation of new ones.
 Only once after creation the secret value is displayed. Existing keys can be
-revoked which immediately prevents further logins.
+revoked which immediately prevents further logins. Each entry shows when the key was last used and from which IP the last login erfolgte.
+
+The **Audit Log** page under Settings displays a table of recent administrative actions such as logins and key changes.
 
 ## Production Build
 

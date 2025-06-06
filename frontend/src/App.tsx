@@ -18,6 +18,7 @@ import Settings from './pages/Settings';
 import Templates from './pages/Templates';
 import Surveillance from './pages/Surveillance';
 import ApiKeys from './pages/ApiKeys';
+import AuditLog from './pages/AuditLog';
 import AgentDetail from './features/agents/AgentDetail';
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="/logs" element={<Logs />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/apikeys" element={<ApiKeys />} />
+              <Route path="/audit" element={<AuditLog />} />
               <Route path="/agents/:uuid" element={<AgentDetail />} />
             </Route>
           </Route>

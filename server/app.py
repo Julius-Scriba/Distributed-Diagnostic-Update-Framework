@@ -181,6 +181,15 @@ class ApiKey(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     revoked = db.Column(db.Boolean, default=False)
     last_used_at = db.Column(db.DateTime)
+    last_ip = db.Column(db.String(64))
+
+class AuditLog(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    action = db.Column(db.String(32))
+    key_id = db.Column(db.String(36), db.ForeignKey('api_key.id'))
+    ip = db.Column(db.String(64))
+    notes = db.Column(db.Text)
 
 class ReconData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -237,6 +246,8 @@ def login():
     for entry in ApiKey.query.filter_by(revoked=False).all():
         if bcrypt.checkpw(key.encode(), entry.hashed_key.encode()):
             entry.last_used_at = datetime.utcnow()
+            entry.last_ip = request.remote_addr
+            db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_success', key_id=entry.id, ip=request.remote_addr))
             db.session.commit()
             token = jwt.encode(
                 {
@@ -247,6 +258,8 @@ def login():
                 algorithm='HS256',
             )
             return jsonify({'token': token})
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_failed', ip=request.remote_addr))
+    db.session.commit()
     return jsonify({'error': 'unauthorized'}), 401
 
 @app.route('/register', methods=['POST'])
@@ -538,6 +551,23 @@ def delete_template(tid):
     return jsonify({'status': 'deleted'})
 
 
+@app.route('/admin/audit_logs', methods=['GET'])
+@require_token
+def get_audit_logs():
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(100).all()
+    result = []
+    for l in logs:
+        result.append({
+            'id': l.id,
+            'timestamp': l.timestamp.replace(tzinfo=None).isoformat() + 'Z',
+            'action': l.action,
+            'key_id': l.key_id,
+            'ip': l.ip,
+            'notes': l.notes,
+        })
+    return jsonify({'logs': result})
+
+
 @app.route('/admin/apikeys', methods=['GET'])
 @require_token
 def list_apikeys():
@@ -549,6 +579,7 @@ def list_apikeys():
             'name': e.name,
             'created_at': e.created_at.replace(tzinfo=None).isoformat() + 'Z',
             'last_used_at': e.last_used_at.replace(tzinfo=None).isoformat() + 'Z' if e.last_used_at else None,
+            'last_ip': e.last_ip,
         })
     return jsonify({'keys': result})
 
@@ -566,6 +597,7 @@ def create_apikey():
     hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt()).decode()
     entry = ApiKey(id=str(uuid.uuid4()), name=name, hashed_key=hashed)
     db.session.add(entry)
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='key_created', key_id=entry.id, ip=request.remote_addr))
     db.session.commit()
     return jsonify({'id': entry.id, 'secret': secret})
 
@@ -577,6 +609,7 @@ def revoke_apikey(aid):
     if not entry:
         return jsonify({'error': 'not found'}), 404
     entry.revoked = True
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='key_revoked', key_id=entry.id, ip=request.remote_addr))
     db.session.commit()
     return jsonify({'status': 'revoked'})
 

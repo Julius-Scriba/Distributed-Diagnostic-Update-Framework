@@ -9,6 +9,7 @@ const links = [
   { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },
   { to: '/apikeys', label: 'API Keys' },
+  { to: '/audit', label: 'Audit Log' },
 ];
 
 export default function Sidebar() {

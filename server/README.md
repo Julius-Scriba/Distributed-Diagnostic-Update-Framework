@@ -135,7 +135,7 @@ API-Schlüssel können über folgende Endpunkte administriert werden:
 
 ```bash
 GET /admin/apikeys
--> { "keys": [{"id":"...","name":"Admin","created_at":"...","last_used_at":"..."}] }
+-> { "keys": [{"id":"...","name":"Admin","created_at":"...","last_used_at":"...","last_ip":"1.2.3.4"}] }
 
 POST /admin/apikeys
 { "name": "Operator" }
@@ -146,6 +146,16 @@ DELETE /admin/apikeys/<id>
 ```
 
 Das ausgegebene Geheimnis bei der Erstellung wird nur ein einziges Mal angezeigt und muss sicher abgelegt werden.
+
+Alle Aktionen werden in einer Audit-Tabelle protokolliert. Darunter erfolgreiche und fehlgeschlagene Logins sowie das Erstellen und Revoken von Schlüsseln.
+Abrufen der letzten Einträge:
+
+```bash
+GET /admin/audit_logs
+-> { "logs": [{"timestamp":"...","action":"login_success","key_id":"...","ip":"1.2.3.4"}] }
+```
+
+Das Skript `cleanup_keys.py` listet API-Schlüssel, die länger als 90 Tage nicht benutzt wurden.
 
 ## API Hardening
 Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
