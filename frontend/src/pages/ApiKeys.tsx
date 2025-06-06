@@ -26,7 +26,7 @@ export default function ApiKeys() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">API Keys</h1>
+      <h1 className="text-xl font-bold text-neonBlue">API Keys</h1>
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -43,9 +43,9 @@ export default function ApiKeys() {
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Name"
-          className="border px-2 py-1"
+          className="bg-[#232323] p-2 rounded"
         />
-        <button className="bg-blue-600 text-white px-3 py-1 rounded" type="submit">
+        <button className="bg-neonBlue text-[#121212] px-3 py-1 rounded" type="submit">
           Create
         </button>
       </form>
@@ -56,7 +56,7 @@ export default function ApiKeys() {
         <input type="checkbox" checked={showStale} onChange={e => setShowStale(e.target.checked)} className="mr-1" />
         Show stale (&gt;90d unused)
       </label>
-      <table className="min-w-full bg-white">
+      <table className="min-w-full bg-[#232323]">
         <thead>
           <tr>
             <th className="text-left p-2">Name</th>
@@ -78,7 +78,7 @@ export default function ApiKeys() {
               <td className="p-2 text-right">
                 <button
                   onClick={() => revoke.mutate(k.id)}
-                  className="text-red-600 underline"
+                  className="text-red-500 underline"
                 >
                   Revoke
                 </button>

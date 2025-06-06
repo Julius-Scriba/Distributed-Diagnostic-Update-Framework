@@ -35,12 +35,12 @@ export default function Commands() {
   };
 
   return (
-    <div className="p-4 text-white space-y-4">
-      <h1 className="text-2xl mb-2">Commands</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl mb-2 text-neonBlue">Commands</h1>
       <div>
         <label className="mr-2">Select Agent:</label>
         <select
-          className="bg-gray-700 p-2 rounded"
+          className="bg-[#232323] p-2 rounded"
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
         >
@@ -59,7 +59,7 @@ export default function Commands() {
           {isError && <p className="text-red-400">Failed to load commands</p>}
           {queue && (
             <div className="overflow-x-auto mb-4">
-            <table className="min-w-full bg-gray-800 text-sm">
+            <table className="min-w-full bg-[#232323] text-sm">
               <thead>
                 <tr>
                   <th className="py-2">Command</th>
@@ -84,10 +84,10 @@ export default function Commands() {
             </div>
           )}
 
-          <div className="bg-gray-800 p-4 rounded w-full max-w-md">
+          <div className="bg-[#1a1a1a] p-4 rounded w-full max-w-md">
             <h2 className="text-xl mb-2">Add Command</h2>
             <select
-              className="w-full bg-gray-700 p-2 mb-2 rounded"
+              className="w-full bg-[#232323] p-2 mb-2 rounded"
               value={cmd}
               onChange={(e) => setCmd(e.target.value)}
             >
@@ -98,14 +98,14 @@ export default function Commands() {
               ))}
             </select>
             <textarea
-              className="w-full bg-gray-700 p-2 mb-2 rounded"
+              className="w-full bg-[#232323] p-2 mb-2 rounded"
               rows={3}
               value={params}
               onChange={(e) => setParams(e.target.value)}
             ></textarea>
             {jsonError && <p className="text-red-400 text-sm">{jsonError}</p>}
             <button
-              className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded mt-2 flex justify-center"
+              className="w-full bg-neonBlue hover:bg-cyan-400 py-2 rounded mt-2 flex justify-center text-[#121212]"
               onClick={submit}
               disabled={sendCommand.isPending}
             >

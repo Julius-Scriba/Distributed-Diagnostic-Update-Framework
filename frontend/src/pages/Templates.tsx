@@ -25,28 +25,28 @@ export default function Templates() {
   };
 
   return (
-    <div className="p-4 text-white space-y-4">
-      <h1 className="text-2xl mb-2">Templates</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl mb-2 text-neonBlue">Templates</h1>
 
-      <div className="bg-gray-800 p-4 rounded w-full max-w-md">
+      <div className="bg-[#1a1a1a] p-4 rounded w-full max-w-md">
         <h2 className="text-xl mb-2">New Template</h2>
         <input
-          className="w-full bg-gray-700 p-2 mb-2 rounded"
+          className="w-full bg-[#232323] p-2 mb-2 rounded"
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <select className="w-full bg-gray-700 p-2 mb-2 rounded" value={cmd} onChange={(e) => setCmd(e.target.value)}>
+        <select className="w-full bg-[#232323] p-2 mb-2 rounded" value={cmd} onChange={(e) => setCmd(e.target.value)}>
           {COMMAND_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
         <textarea
-          className="w-full bg-gray-700 p-2 mb-2 rounded"
+          className="w-full bg-[#232323] p-2 mb-2 rounded"
           rows={3}
           value={params}
           onChange={(e) => setParams(e.target.value)}
         ></textarea>
         {error && <p className="text-red-400 text-sm">{error}</p>}
-        <button className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded" onClick={submit} disabled={create.isPending}>
+        <button className="w-full bg-neonBlue hover:bg-cyan-400 py-2 rounded text-[#121212]" onClick={submit} disabled={create.isPending}>
           Add
         </button>
         {create.isSuccess && (
@@ -60,7 +60,7 @@ export default function Templates() {
         {isError && <p className="text-red-400">Failed to load templates</p>}
         {data && (
           <div className="overflow-x-auto">
-          <table className="min-w-full bg-gray-800 text-sm">
+          <table className="min-w-full bg-[#232323] text-sm">
             <thead>
               <tr>
                 <th className="py-2">Name</th>

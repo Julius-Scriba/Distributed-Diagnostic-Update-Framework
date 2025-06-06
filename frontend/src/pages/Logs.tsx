@@ -9,8 +9,8 @@ export default function Logs() {
   const { data: logs, isLoading, isError } = useLogs(selected || null);
 
   return (
-    <div className="p-4 text-white space-y-4">
-      <h1 className="text-2xl mb-2">Logs</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl mb-2 text-neonBlue">Logs</h1>
       <div>
         <label className="mr-2">Select Agent:</label>
         <select

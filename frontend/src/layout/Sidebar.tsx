@@ -1,29 +1,41 @@
 import { NavLink } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Users,
+  TerminalSquare,
+  List,
+  Camera,
+  FileText,
+  Settings as SettingsIcon,
+  Key,
+  ListChecks,
+} from 'lucide-react';
 
 const links = [
-  { to: '/', label: 'Dashboard' },
-  { to: '/agents', label: 'Agents' },
-  { to: '/commands', label: 'Commands' },
-  { to: '/templates', label: 'Templates' },
-  { to: '/surveillance', label: 'Surveillance' },
-  { to: '/logs', label: 'Logs' },
-  { to: '/settings', label: 'Settings' },
-  { to: '/apikeys', label: 'API Keys' },
-  { to: '/audit', label: 'Audit Log' },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/agents', label: 'Agents', icon: Users },
+  { to: '/commands', label: 'Commands', icon: TerminalSquare },
+  { to: '/templates', label: 'Templates', icon: List },
+  { to: '/surveillance', label: 'Surveillance', icon: Camera },
+  { to: '/logs', label: 'Logs', icon: FileText },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/apikeys', label: 'API Keys', icon: Key },
+  { to: '/audit', label: 'Audit Log', icon: ListChecks },
 ];
 
 export default function Sidebar() {
   return (
-    <aside className="w-48 bg-gray-800 text-white flex flex-col p-4 space-y-2 sticky top-0 h-screen">
-      {links.map(link => (
+    <aside className="w-48 bg-[#1a1a1a] text-gray-200 flex flex-col p-4 space-y-2 sticky top-0 h-screen">
+      {links.map(({ to, label, icon: Icon }) => (
         <NavLink
-          key={link.to}
-          to={link.to}
+          key={to}
+          to={to}
           className={({ isActive }) =>
-            `px-2 py-1 rounded transition-colors hover:bg-gray-700 hover:text-white ${isActive ? 'bg-gray-700 text-blue-300' : ''}`
+            `flex items-center space-x-2 px-2 py-2 rounded transition-colors hover:bg-[#232323] ${isActive ? 'bg-[#232323] text-neonBlue' : ''}`
           }
         >
-          {link.label}
+          <Icon className="w-4 h-4" />
+          <span>{label}</span>
         </NavLink>
       ))}
     </aside>

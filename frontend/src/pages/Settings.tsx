@@ -5,8 +5,8 @@ export default function Settings() {
   const { data, isLoading, isError } = useConfig();
 
   return (
-    <div className="p-4 text-white space-y-4">
-      <h1 className="text-2xl mb-2">Settings</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl mb-2 text-neonBlue">Settings</h1>
       {isLoading && <Spinner />}
       {isError && <p className="text-red-400">Failed to load settings</p>}
       {data && (

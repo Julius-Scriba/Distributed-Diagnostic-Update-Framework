@@ -8,8 +8,8 @@ export default function AuditLog() {
   if (error) return <div className="text-red-600">Error loading logs</div>;
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Audit Log</h1>
-      <table className="min-w-full bg-white">
+      <h1 className="text-xl font-bold text-neonBlue">Audit Log</h1>
+      <table className="min-w-full bg-[#232323]">
         <thead>
           <tr>
             <th className="p-2 text-left">Time</th>

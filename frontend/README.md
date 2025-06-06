@@ -1,6 +1,6 @@
 # ULTSPY Web UI
 
-This web interface allows operators to interact with the ULTSPY C2 backend. It is built with Vite, React, TypeScript and TailwindCSS. The UI components follow the shadcn/ui style guidelines.
+This web interface allows operators to interact with the ULTSPY C2 backend. It is built with Vite, React, TypeScript and TailwindCSS. The UI components follow the shadcn/ui style guidelines and feature a dark theme with neon-blue and turquoise accents. Navigation icons are provided by `lucide-react`.
 
 ## Setup
 
@@ -19,7 +19,8 @@ JWT token is returned. This token is saved in `localStorage` under
 `Authorization` header. If a request fails with `401 Unauthorized`, the token is
 removed and you are redirected back to the login page. Network outages trigger a
 red banner saying "Verbindung zum Backend unterbrochen." at the top of the
-dashboard. Use the **Logout** button in the header to clear the token manually.
+dashboard. The login form lets you toggle the API key visibility while typing.
+Use the **Logout** button in the header to clear the token manually.
 
 ## Project Structure
 

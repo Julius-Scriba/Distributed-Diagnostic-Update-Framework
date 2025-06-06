@@ -8,13 +8,13 @@ export default function Surveillance() {
   const [image, setImage] = useState<string | null>(null);
 
   return (
-    <div className="p-4 text-white space-y-4">
-      <h1 className="text-2xl mb-2">Surveillance</h1>
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl mb-2 text-neonBlue">Surveillance</h1>
       {isLoading && <Spinner />}
       {isError && <p className="text-red-400">Failed to load surveillance data</p>}
       {data && (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-gray-800 text-sm">
+          <table className="min-w-full bg-[#232323] text-sm">
             <thead>
               <tr>
                 <th className="py-2">Agent</th>

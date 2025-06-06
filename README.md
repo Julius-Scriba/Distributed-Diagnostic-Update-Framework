@@ -116,7 +116,7 @@ Administratoren melden sich nun über `/login` mit einem API-Key an und erhalten
 ### Web UI
 
 A React-based interface in `frontend/` allows operators to log in with their API
-key and manage agents. Open `/login` to enter the key; it is stored in
+key and manage agents. The interface has a dark theme with neon-blue and turquoise accents and uses icons from `lucide-react`. Open `/login` to enter the key; it is stored in
 `localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization`
 header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
 is removed and the user is redirected to `/login`. Network issues trigger a global
