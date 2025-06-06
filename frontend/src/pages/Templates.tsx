@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTemplates, useCreateTemplate, useDeleteTemplate } from '../api/useTemplates';
+import Spinner from '../components/Spinner';
 
 const COMMAND_OPTIONS = ['SAFE_MODE', 'DEEP_SLEEP', 'WIPE', 'RECON'];
 
@@ -52,7 +53,7 @@ export default function Templates() {
       </div>
 
       <div>
-        {isLoading && <p>Loading...</p>}
+        {isLoading && <Spinner />}
         {isError && <p className="text-red-400">Failed to load templates</p>}
         {data && (
           <table className="min-w-full bg-gray-800">

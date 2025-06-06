@@ -2,6 +2,7 @@ import { useState } from 'react';
 import useAgents from '../api/useAgents';
 import useCommands from '../api/useCommands';
 import useSendCommand from '../api/useSendCommand';
+import Spinner from '../components/Spinner';
 
 const COMMAND_OPTIONS = ['SAFE_MODE', 'DEEP_SLEEP', 'WIPE', 'RECON'];
 
@@ -54,7 +55,7 @@ export default function Commands() {
 
       {selected && (
         <>
-          {isLoading && <p>Loading...</p>}
+          {isLoading && <Spinner />}
           {isError && <p className="text-red-400">Failed to load commands</p>}
           {queue && (
             <table className="min-w-full bg-gray-800 mb-4">
@@ -102,11 +103,15 @@ export default function Commands() {
             ></textarea>
             {jsonError && <p className="text-red-400 text-sm">{jsonError}</p>}
             <button
-              className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded mt-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded mt-2 flex justify-center"
               onClick={submit}
               disabled={sendCommand.isPending}
             >
-              Add
+              {sendCommand.isPending ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                'Add'
+              )}
             </button>
             {sendCommand.isSuccess && (
               <p className="text-green-400 mt-2 text-center">Command queued</p>

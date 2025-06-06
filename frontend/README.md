@@ -16,6 +16,10 @@ The development server proxies API requests to `http://localhost:5000`.
 Open `/login` and enter your API key. It will be stored in `localStorage` under
 `ULTSPY_API_KEY`. All requests to `/admin/*` automatically include this key in
 the `X-API-KEY` header via an Axios interceptor.
+If a request fails with `401 Unauthorized`, the key is removed and you are
+redirected back to the login page. Network outages trigger a red banner saying
+"Verbindung zum Backend unterbrochen." at the top of the dashboard.
+Use the **Logout** button in the header to clear the stored key manually.
 
 ## Project Structure
 

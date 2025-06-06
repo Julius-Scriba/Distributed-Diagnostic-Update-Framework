@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import useAgents from '../api/useAgents';
+import Spinner from '../components/Spinner';
 
 export default function Agents() {
   const { data, isLoading, isError } = useAgents();
@@ -7,7 +8,7 @@ export default function Agents() {
   return (
     <div className="p-4 text-white">
       <h1 className="text-2xl mb-4">Agents</h1>
-      {isLoading && <p>Loading...</p>}
+      {isLoading && <Spinner />}
       {isError && <p className="text-red-400">Failed to load agents</p>}
       {data && (
         <table className="min-w-full bg-gray-800">

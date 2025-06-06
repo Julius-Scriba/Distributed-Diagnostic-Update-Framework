@@ -1,4 +1,5 @@
 import useConfig from '../api/useConfig';
+import Spinner from '../components/Spinner';
 
 export default function Settings() {
   const { data, isLoading, isError } = useConfig();
@@ -6,7 +7,7 @@ export default function Settings() {
   return (
     <div className="p-4 text-white space-y-4">
       <h1 className="text-2xl mb-2">Settings</h1>
-      {isLoading && <p>Loading...</p>}
+      {isLoading && <Spinner />}
       {isError && <p className="text-red-400">Failed to load settings</p>}
       {data && (
         <div className="space-y-4">

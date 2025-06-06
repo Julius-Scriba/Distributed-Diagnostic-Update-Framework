@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from './api';
+import Spinner from './components/Spinner';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [key, setKey] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
@@ -17,14 +21,25 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
         />
         <button
           className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded"
-          onClick={() => {
+          onClick={async () => {
+            setLoading(true);
+            setError('');
             localStorage.setItem('ULTSPY_API_KEY', key);
-            onLogin();
-            navigate('/');
+            try {
+              await api.get('/admin/config');
+              onLogin();
+              navigate('/');
+            } catch {
+              localStorage.removeItem('ULTSPY_API_KEY');
+              setError('Ungültiger API-Key oder keine Verbindung zum Server.');
+            } finally {
+              setLoading(false);
+            }
           }}
         >
-          Login
+          {loading ? <Spinner /> : 'Login'}
         </button>
+        {error && <p className="text-red-400 mt-2 text-center text-sm">{error}</p>}
       </div>
     </div>
   );

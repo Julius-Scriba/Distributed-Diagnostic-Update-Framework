@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useAgents from '../api/useAgents';
 import useLogs from '../api/useLogs';
+import Spinner from '../components/Spinner';
 
 export default function Logs() {
   const { data: agents } = useAgents();
@@ -28,7 +29,7 @@ export default function Logs() {
 
       {selected && (
         <>
-          {isLoading && <p>Loading...</p>}
+          {isLoading && <Spinner />}
           {isError && (
             <p className="text-red-400">Failed to load logs</p>
           )}

@@ -108,7 +108,11 @@ Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`
 A React-based interface in `frontend/` allows operators to log in with their API
 key and manage agents. Open `/login` to enter the key; it is stored in
 `localStorage` under `ULTSPY_API_KEY` and automatically sent with all
-`/admin/*` requests. The **Agents** page retrieves data from `/admin/agents` and
+`/admin/*` requests. If the backend responds with `401 Unauthorized` the key is
+cleared and the user is redirected to `/login`. Network issues trigger a global
+"Verbindung zum Backend unterbrochen." banner.
+Operators can log out via the header button which clears the stored key.
+The **Agents** page retrieves data from `/admin/agents` and
 shows the online state of each client. The **Commands** page lets an operator
 view the queued commands for a selected agent and submit new entries via
 `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und
