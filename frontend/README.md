@@ -60,7 +60,9 @@ Click on an agent UUID to open its detail page `/agents/:uuid` showing the
 stability badge, last seen information and a dialog to send commands directly.
 Below the dialog a list of **Command Templates** is available. Selecting one
 previews the JSON payload and allows sending it to the agent with a single
-click.
+click.  A scrollable **Logs** table underneath lists the entire log history of
+the agent. Each row shows a relative timestamp, type and description. Large JSON
+payloads can be expanded using a "mehr anzeigen" toggle.
 
 ## Commands Interface
 
