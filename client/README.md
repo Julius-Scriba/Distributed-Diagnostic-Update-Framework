@@ -70,3 +70,6 @@ Die Daten werden wie beim Standard-Modul AES-verschlüsselt via `RECON_ADV` gese
 
 ## Update Handler
 Im Deploy-Build prüft der `UpdateHandler` regelmäßig, ob unter `/payload/<uuid>/agent` ein neues Binärupdate bereitliegt. Die heruntergeladene Datei wird entschlüsselt und kann die laufende Version ersetzen.
+
+## Dynamischer Command Dispatcher
+Nur im deploybaren Build registriert der `DynamicDispatcher` die Kommandos `RECON_ADVANCED`, `SAFE_MODE`, `DEEP_SLEEP` und `WIPE`. Unbekannte Befehle werden geloggt, aber ignoriert. Dadurch bleibt die Steuerlogik flexibel und fehlertolerant.

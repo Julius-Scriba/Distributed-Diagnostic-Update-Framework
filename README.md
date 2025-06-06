@@ -45,6 +45,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - ReconAdvanced-Modul (nur Deploy-Version) liefert detaillierte Hardware- und Sicherheitsdaten
 - Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
 - Kommando-Templates erleichtern wiederkehrende Steuerbefehle
+- Dynamischer Kommando-Dispatcher im Deploy-Build verarbeitet JSON-Befehle
 
 ### Server (Python)
 
