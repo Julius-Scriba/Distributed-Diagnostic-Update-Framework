@@ -62,7 +62,10 @@ Below the dialog a list of **Command Templates** is available. Selecting one
 previews the JSON payload and allows sending it to the agent with a single
 click.  A scrollable **Logs** table underneath lists the entire log history of
 the agent. Each row shows a relative timestamp, type and description. Large JSON
-payloads can be expanded using a "mehr anzeigen" toggle.
+payloads can be expanded using a "mehr anzeigen" toggle. A second **Surveillance**
+tab filters these logs for entries of type `Surveillance` and displays detected
+person names with image thumbnails. Clicking a thumbnail opens a lightbox with
+the full picture and the raw JSON payload can also be expanded.
 
 ## Commands Interface
 
@@ -92,6 +95,7 @@ GET /admin/logs/<uuid>
 ```
 
 Select an agent from the dropdown to load its logs. Each row shows a timestamp, the log type and a short description. If raw data is available it can be expanded in place.
+On the agent detail page you can switch to a **Surveillance** tab that filters the list for surveillance entries and shows thumbnails of captured images.
 
 ## Settings Interface
 

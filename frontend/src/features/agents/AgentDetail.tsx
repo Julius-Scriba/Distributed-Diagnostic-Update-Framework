@@ -21,6 +21,8 @@ export default function AgentDetail() {
   const [jsonError, setJsonError] = useState('');
   const [templatePreview, setTemplatePreview] = useState<TemplateEntry | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [tab, setTab] = useState<'logs' | 'surveillance'>('logs');
+  const [image, setImage] = useState<string | null>(null);
 
   if (isLoading) return <Spinner />;
   if (isError) return <p className="text-red-400">Failed to load agent</p>;
@@ -72,62 +74,169 @@ export default function AgentDetail() {
       </div>
 
       <div>
-        <h2 className="text-xl mb-2 mt-4">Logs</h2>
-        {lLoading && <Spinner />}
-        {lError && <p className="text-red-400">Failed to load logs</p>}
-        {logs && (
-          <div className="max-h-64 overflow-y-auto overflow-x-auto">
-            <table className="min-w-full bg-gray-800 text-sm">
-              <thead>
-                <tr>
-                  <th className="py-2">Timestamp</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                  <th>Data</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...logs]
-                  .sort((a, b) =>
-                    new Date(b.timestamp).getTime() -
-                    new Date(a.timestamp).getTime()
-                  )
-                  .map((log, idx) => (
-                    <tr key={idx} className="text-center">
-                      <td className="py-1 px-2">
-                        {formatDistanceToNow(new Date(log.timestamp), {
-                          addSuffix: true,
-                        })}
-                      </td>
-                      <td>{log.type}</td>
-                      <td>{log.description}</td>
-                      <td>
-                        {log.data && (
-                          <div>
-                            <pre className="text-left whitespace-pre-wrap">
-                              {expanded === idx
-                                ? log.data
-                                : `${log.data.slice(0, 200)}${
-                                    log.data.length > 200 ? '...' : ''
-                                  }`}
-                            </pre>
-                            {log.data.length > 200 && (
-                              <button
-                                className="text-blue-400 underline"
-                                onClick={() =>
-                                  setExpanded(expanded === idx ? null : idx)
-                                }
-                              >
-                                {expanded === idx ? 'weniger' : 'mehr anzeigen'}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </td>
+        <div className="flex gap-4 mt-4">
+          <button
+            onClick={() => setTab('logs')}
+            className={`px-3 py-1 rounded ${
+              tab === 'logs' ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'
+            }`}
+          >
+            Logs
+          </button>
+          <button
+            onClick={() => setTab('surveillance')}
+            className={`px-3 py-1 rounded ${
+              tab === 'surveillance'
+                ? 'bg-gray-700'
+                : 'bg-gray-800 hover:bg-gray-700'
+            }`}
+          >
+            Surveillance
+          </button>
+        </div>
+
+        {tab === 'logs' && (
+          <div>
+            {lLoading && <Spinner />}
+            {lError && <p className="text-red-400">Failed to load logs</p>}
+            {logs && (
+              <div className="max-h-64 overflow-y-auto overflow-x-auto mt-2">
+                <table className="min-w-full bg-gray-800 text-sm">
+                  <thead>
+                    <tr>
+                      <th className="py-2">Timestamp</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>Data</th>
                     </tr>
-                  ))}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {[...logs]
+                      .sort(
+                        (a, b) =>
+                          new Date(b.timestamp).getTime() -
+                          new Date(a.timestamp).getTime()
+                      )
+                      .map((log, idx) => (
+                        <tr key={idx} className="text-center">
+                          <td className="py-1 px-2">
+                            {formatDistanceToNow(new Date(log.timestamp), {
+                              addSuffix: true,
+                            })}
+                          </td>
+                          <td>{log.type}</td>
+                          <td>{log.description}</td>
+                          <td>
+                            {log.data && (
+                              <div>
+                                <pre className="text-left whitespace-pre-wrap">
+                                  {expanded === idx
+                                    ? log.data
+                                    : `${log.data.slice(0, 200)}${
+                                        log.data.length > 200 ? '...' : ''
+                                      }`}
+                                </pre>
+                                {log.data.length > 200 && (
+                                  <button
+                                    className="text-blue-400 underline"
+                                    onClick={() =>
+                                      setExpanded(expanded === idx ? null : idx)
+                                    }
+                                  >
+                                    {expanded === idx ? 'weniger' : 'mehr anzeigen'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'surveillance' && (
+          <div>
+            {lLoading && <Spinner />}
+            {lError && <p className="text-red-400">Failed to load logs</p>}
+            {logs && (
+              <div className="max-h-64 overflow-y-auto overflow-x-auto mt-2">
+                <table className="min-w-full bg-gray-800 text-sm">
+                  <thead>
+                    <tr>
+                      <th className="py-2">Timestamp</th>
+                      <th>Person</th>
+                      <th>Image</th>
+                      <th>Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs
+                      .filter(l => l.type === 'Surveillance')
+                      .sort(
+                        (a, b) =>
+                          new Date(b.timestamp).getTime() -
+                          new Date(a.timestamp).getTime()
+                      )
+                      .map((log, idx) => {
+                        let payload: any = {};
+                        try {
+                          payload = JSON.parse(log.data || '{}');
+                        } catch {
+                          payload = {};
+                        }
+                        return (
+                          <tr key={idx} className="text-center">
+                            <td className="py-1 px-2">
+                              {formatDistanceToNow(new Date(log.timestamp), {
+                                addSuffix: true,
+                              })}
+                            </td>
+                            <td>{payload.name || 'n/a'}</td>
+                            <td>
+                              {payload.image_url && (
+                                <img
+                                  src={payload.image_url}
+                                  onClick={() => setImage(payload.image_url)}
+                                  className="w-16 h-16 object-cover cursor-pointer mx-auto"
+                                />
+                              )}
+                            </td>
+                            <td>
+                              {log.data && (
+                                <div>
+                                  <pre className="text-left whitespace-pre-wrap">
+                                    {expanded === idx
+                                      ? log.data
+                                      : `${log.data.slice(0, 200)}${
+                                          log.data.length > 200 ? '...' : ''
+                                        }`}
+                                  </pre>
+                                  {log.data.length > 200 && (
+                                    <button
+                                      className="text-blue-400 underline"
+                                      onClick={() =>
+                                        setExpanded(expanded === idx ? null : idx)
+                                      }
+                                    >
+                                      {expanded === idx
+                                        ? 'weniger'
+                                        : 'mehr anzeigen'}
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -187,6 +296,12 @@ export default function AgentDetail() {
               <p className="text-red-400 mt-2 text-center">Error</p>
             )}
           </div>
+        )}
+      </Modal>
+
+      <Modal open={!!image} onClose={() => setImage(null)}>
+        {image && (
+          <img src={image} className="max-w-full max-h-screen" />
         )}
       </Modal>
 
