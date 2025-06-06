@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <dlfcn.h>
 #include <iostream>
+#include <algorithm>
 
 Loader::Loader(const std::string& path, const std::string& aes_key)
     : path_(path), key_(aes_key) {}

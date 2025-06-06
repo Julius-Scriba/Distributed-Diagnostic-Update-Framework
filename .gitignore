@@ -1,0 +1,8 @@
+venv/
+client/build/
+frontend/node_modules/
+frontend/dist/
+server/__pycache__/
+
+client/dev_version/build/
+client/deployable_version/build/

