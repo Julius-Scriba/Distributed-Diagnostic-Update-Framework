@@ -64,7 +64,7 @@ Der verschlüsselte Überwachungsbericht enthält laufende Prozesse, Autoruns un
 
 ## Admin Endpoints
 
-Für administrative Aufgaben steht ein einfacher API-Key geschützter Zugriff zur Verfügung. Der Key wird über den HTTP-Header `X-API-KEY` übermittelt.
+Für administrative Aufgaben steht ein API-Key geschützter Zugriff zur Verfügung. Der Schlüssel wird über den HTTP-Header `X-API-KEY` mitgesendet. Bei fehlendem oder falschem Schlüssel antwortet der Server mit `401 Unauthorized`.
 
 ### Agents auflisten
 ```
@@ -134,7 +134,16 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Der API-Key kann über die Umgebungsvariable `ADMIN_API_KEY` gesetzt werden (Standard: `changeme`).
+Die API-Schlüssel werden in `config.json` definiert. Beispiel:
+```json
+{
+  "allowed_hosts": ["localhost", "example.cloudfront.net"],
+  "api_keys": {
+    "admin": "changemeadmin"
+  }
+}
+```
+Der passende Schlüssel muss bei Admin-Aufrufen im Header `X-API-KEY` übergeben werden. Bei falschem oder fehlendem Key antwortet der Server mit `401 Unauthorized`.
 
 ## Domain Fronting Vorbereitung
 

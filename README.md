@@ -55,6 +55,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Admin-Schnittstelle mit API-Key-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
 - Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
+- API-Schlüssel für Admin-Endpunkte werden ebenfalls in `config.json` gespeichert
 
 ---
 

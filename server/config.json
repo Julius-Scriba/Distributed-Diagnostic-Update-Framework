@@ -1,3 +1,6 @@
 {
-  "allowed_hosts": ["localhost", "example.cloudfront.net"]
+  "allowed_hosts": ["localhost", "example.cloudfront.net"],
+  "api_keys": {
+    "admin": "changemeadmin"
+  }
 }

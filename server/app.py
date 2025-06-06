@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 
 TIMEOUT_SECONDS = 180
-ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
+API_KEYS = {}
 BACKEND_VERSION = os.environ.get('BACKEND_VERSION', 'dev')
 FRONTEND_VERSION = 'unknown'
 try:
@@ -43,6 +43,7 @@ if os.path.exists('config.json'):
         try:
             CONFIG = json.load(f)
             ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
+            API_KEYS = CONFIG.get('api_keys', {})
         except Exception as e:
             logging.warning('Failed to load config.json: %s', e)
 
@@ -51,7 +52,7 @@ def require_api_key(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         key = request.headers.get('X-API-KEY')
-        if key != ADMIN_API_KEY:
+        if not key or key not in API_KEYS.values():
             abort(401)
         return f(*args, **kwargs)
     return wrapper
@@ -355,7 +356,7 @@ def list_targets():
 @require_api_key
 def admin_config():
     return jsonify({
-        'api_keys': ['default'],
+        'api_keys': list(API_KEYS.keys()),
         'heartbeat_timeout': TIMEOUT_SECONDS,
         'versions': {
             'backend': BACKEND_VERSION,
