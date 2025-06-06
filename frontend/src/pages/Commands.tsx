@@ -58,7 +58,8 @@ export default function Commands() {
           {isLoading && <Spinner />}
           {isError && <p className="text-red-400">Failed to load commands</p>}
           {queue && (
-            <table className="min-w-full bg-gray-800 mb-4">
+            <div className="overflow-x-auto mb-4">
+            <table className="min-w-full bg-gray-800 text-sm">
               <thead>
                 <tr>
                   <th className="py-2">Command</th>
@@ -80,9 +81,10 @@ export default function Commands() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
 
-          <div className="bg-gray-800 p-4 rounded w-96">
+          <div className="bg-gray-800 p-4 rounded w-full max-w-md">
             <h2 className="text-xl mb-2">Add Command</h2>
             <select
               className="w-full bg-gray-700 p-2 mb-2 rounded"

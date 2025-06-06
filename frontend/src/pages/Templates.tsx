@@ -28,7 +28,7 @@ export default function Templates() {
     <div className="p-4 text-white space-y-4">
       <h1 className="text-2xl mb-2">Templates</h1>
 
-      <div className="bg-gray-800 p-4 rounded w-96">
+      <div className="bg-gray-800 p-4 rounded w-full max-w-md">
         <h2 className="text-xl mb-2">New Template</h2>
         <input
           className="w-full bg-gray-700 p-2 mb-2 rounded"
@@ -49,6 +49,9 @@ export default function Templates() {
         <button className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded" onClick={submit} disabled={create.isPending}>
           Add
         </button>
+        {create.isSuccess && (
+          <p className="text-green-400 text-sm text-center mt-2">Saved</p>
+        )}
         {create.isError && <p className="text-red-400 text-sm text-center mt-2">Error</p>}
       </div>
 
@@ -56,7 +59,8 @@ export default function Templates() {
         {isLoading && <Spinner />}
         {isError && <p className="text-red-400">Failed to load templates</p>}
         {data && (
-          <table className="min-w-full bg-gray-800">
+          <div className="overflow-x-auto">
+          <table className="min-w-full bg-gray-800 text-sm">
             <thead>
               <tr>
                 <th className="py-2">Name</th>
@@ -66,7 +70,7 @@ export default function Templates() {
               </tr>
             </thead>
             <tbody>
-              {data.map(t => (
+              {[...data].reverse().map(t => (
                 <tr key={t.template_id} className="text-center">
                   <td className="py-1 px-2">{t.name}</td>
                   <td>{t.command}</td>
@@ -80,6 +84,7 @@ export default function Templates() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

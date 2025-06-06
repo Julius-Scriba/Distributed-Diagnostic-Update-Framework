@@ -34,6 +34,14 @@ Use the **Logout** button in the header to clear the stored key manually.
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
 
+## User Experience
+
+The sidebar and header remain visible using sticky positioning so navigation is
+always available. Loading indicators appear centered on each page and every
+route distinguishes loading, success and error states. Tables become scrollable
+on small screens and the active navigation link is highlighted with a subtle
+hover effect.
+
 ## Commands Interface
 
 Open the **Commands** page to inspect or modify the command queue for a specific agent.

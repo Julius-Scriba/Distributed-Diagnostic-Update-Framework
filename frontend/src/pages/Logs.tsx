@@ -34,7 +34,8 @@ export default function Logs() {
             <p className="text-red-400">Failed to load logs</p>
           )}
           {logs && (
-            <table className="min-w-full bg-gray-800">
+            <div className="overflow-x-auto">
+            <table className="min-w-full bg-gray-800 text-sm">
               <thead>
                 <tr>
                   <th className="py-2">Timestamp</th>
@@ -65,6 +66,7 @@ export default function Logs() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </>
       )}

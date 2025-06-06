@@ -6,12 +6,13 @@ export default function Agents() {
   const { data, isLoading, isError } = useAgents();
 
   return (
-    <div className="p-4 text-white">
+    <div className="p-4 text-white space-y-4">
       <h1 className="text-2xl mb-4">Agents</h1>
       {isLoading && <Spinner />}
       {isError && <p className="text-red-400">Failed to load agents</p>}
       {data && (
-        <table className="min-w-full bg-gray-800">
+        <div className="overflow-x-auto">
+        <table className="min-w-full bg-gray-800 text-sm">
           <thead>
             <tr>
               <th className="py-2">UUID</th>
@@ -20,7 +21,7 @@ export default function Agents() {
             </tr>
           </thead>
           <tbody>
-            {data.map(a => (
+            {[...data].sort((a,b)=>a.uuid.localeCompare(b.uuid)).map(a => (
               <tr key={a.uuid} className="text-center">
                 <td className="py-1 px-2">
                   <Link className="text-blue-400 hover:underline" to={`/agents/${a.uuid}`}>{a.uuid}</Link>
@@ -36,6 +37,7 @@ export default function Agents() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
