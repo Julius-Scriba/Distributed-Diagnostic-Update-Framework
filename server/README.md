@@ -54,6 +54,7 @@ POST /recon/<uuid>
 { "data": "<base64 AES(iv+json)>" }
 ```
 Der verschlüsselte Recon-Bericht wird gespeichert und kann zu Debug-Zwecken entschlüsselt ausgegeben werden.
+Das Deploy-Build übermittelt über `RECON_ADV` zusätzlich detaillierte Hardware- und Sicherheitsinformationen im selben Format.
 
 ## Active Surveillance Report
 ```

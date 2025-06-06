@@ -41,6 +41,7 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
 - Vorbereitende Anti-Forensik Stubs (Process Hollowing & PPID Spoofing)
 - Initiales Recon-Modul sammelt umfangreiche Systeminformationen
+- ReconAdvanced-Modul (nur Deploy-Version) liefert detaillierte Hardware- und Sicherheitsdaten
 - Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
 - Kommando-Templates erleichtern wiederkehrende Steuerbefehle
 
