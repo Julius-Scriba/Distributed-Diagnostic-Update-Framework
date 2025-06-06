@@ -35,10 +35,11 @@ Beispiel:
 ```
 
 ## Persistenz
-Der neue Persistenz-Layer nutzt mehrere Mechanismen:
-- Ein Run‑Key mit PowerShell-EncodedCommand startet den Agenten nach dem Login.
+Der deploybare Build nutzt mehrere Mechanismen, die jeweils per Compile-Flag
+aktiviert oder deaktiviert werden können:
+- Run‑Keys unter **HKCU** und **HKLM** starten den Agenten nach dem Login.
 - Ein versteckter Scheduled Task mit Verzögerung sorgt für Redundanz.
-- Die Binärdatei wird zusätzlich verschlüsselt in einem NTFS-ADS hinterlegt.
+- Optional kann die Binärdatei verschlüsselt in einem NTFS-ADS abgelegt werden.
 - Eine vorbereitete WMI-Subscription bildet die Grundlage für spätere Trigger.
 
 ## Safe Mode
@@ -66,3 +67,6 @@ Die Daten werden wie beim Standard-Modul AES-verschlüsselt via `RECON_ADV` gese
 
 ## Active Surveillance Module
 `ActiveSurveillanceModule` listet laufende Prozesse inklusive Pfad und SHA256, liest Autostart-Einträge und aktive Dienste aus und sendet die Daten verschlüsselt über den Befehl `SURVEILLANCE`.
+
+## Update Handler
+Im Deploy-Build prüft der `UpdateHandler` regelmäßig, ob unter `/payload/<uuid>/agent` ein neues Binärupdate bereitliegt. Die heruntergeladene Datei wird entschlüsselt und kann die laufende Version ersetzen.

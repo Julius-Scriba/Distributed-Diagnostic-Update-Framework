@@ -30,7 +30,8 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
   - Kommandos werden pluginbasiert über eine Registry geladen
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
 - Key-Exchange: RSA-4096 initialer Schluessel
-- Fortgeschrittener Persistenz-Layer (Run-Key, verschleierte Tasks, ADS, WMI-Vorbereitung)
+- Fortgeschrittener Persistenz-Layer (HKCU/HKLM Run-Keys, verschleierte Tasks, ADS optional, WMI-Vorbereitung)
+- Automatische Update-Kontrolle im Deploy-Build
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
