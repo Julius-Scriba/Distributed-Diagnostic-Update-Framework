@@ -1,0 +1,7 @@
+{
+  "allowed_hosts": ["localhost", "example.cloudfront.net"],
+  "api_keys": {
+    "admin": "changemeadmin"
+  },
+  "jwt_secret": "change_this_secret"
+}

