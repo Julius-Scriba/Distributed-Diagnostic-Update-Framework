@@ -56,6 +56,9 @@ how reliable the heartbeat is:
 | 91–180s| 🟠 Degraded |
 | >180s or offline | 🔴 Offline |
 
+Click on an agent UUID to open its detail page `/agents/:uuid` showing the
+stability badge, last seen information and a dialog to send commands directly.
+
 ## Commands Interface
 
 Open the **Commands** page to inspect or modify the command queue for a specific agent.
