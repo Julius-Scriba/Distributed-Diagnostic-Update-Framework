@@ -5,7 +5,7 @@ class WipeCmd : public CommandModule {
 public:
     std::string name() const override { return "CmdWipe"; }
     void init() override {
-        register_command("WIPE", [](const nlohmann::json&){
+        register_command("WIPE", [](const nlohmann::json& cmd){
             perform_wipe();
         });
     }

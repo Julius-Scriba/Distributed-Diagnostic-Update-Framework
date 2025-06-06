@@ -18,9 +18,8 @@ bool CommandRegistry::dispatch(const nlohmann::json& cmd) {
         std::cerr << "Unknown command: " << name << std::endl;
         return false;
     }
-    nlohmann::json params = cmd.value("parameters", nlohmann::json::object());
     try {
-        it->second(params);
+        it->second(cmd);
     } catch(const std::exception& e) {
         std::cerr << "Command " << name << " failed: " << e.what() << std::endl;
     }
