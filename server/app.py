@@ -7,6 +7,8 @@ import os
 import json
 import hmac
 import hashlib
+import uuid
+import bcrypt
 import jwt
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -45,10 +47,25 @@ if os.path.exists('config.json'):
         try:
             CONFIG = json.load(f)
             ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
-            API_KEYS = CONFIG.get('api_keys', {})
             JWT_SECRET = CONFIG.get('jwt_secret')
+            API_KEYS = CONFIG.get('api_keys', {})
         except Exception as e:
             logging.warning('Failed to load config.json: %s', e)
+
+def migrate_api_keys():
+    cfg_keys = CONFIG.get('api_keys', {})
+    updated = False
+    for name, key in cfg_keys.items():
+        if not ApiKey.query.filter_by(name=name).first():
+            hashed = bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode()
+            db.session.add(ApiKey(id=str(uuid.uuid4()), name=name, hashed_key=hashed))
+            updated = True
+    if updated:
+        db.session.commit()
+    if cfg_keys:
+        CONFIG.pop('api_keys', None)
+        global API_KEYS
+        API_KEYS = {}
 
 
 def require_api_key(f):
@@ -157,6 +174,14 @@ class NonceRecord(db.Model):
     nonce = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class ApiKey(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    hashed_key = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    revoked = db.Column(db.Boolean, default=False)
+    last_used_at = db.Column(db.DateTime)
+
 class ReconData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
@@ -208,12 +233,14 @@ def register_client(uuid):
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json(force=True)
-    key = data.get('api_key')
-    for kid, value in API_KEYS.items():
-        if key == value:
+    key = data.get('api_key', '')
+    for entry in ApiKey.query.filter_by(revoked=False).all():
+        if bcrypt.checkpw(key.encode(), entry.hashed_key.encode()):
+            entry.last_used_at = datetime.utcnow()
+            db.session.commit()
             token = jwt.encode(
                 {
-                    'kid': kid,
+                    'kid': entry.id,
                     'exp': datetime.utcnow() + timedelta(hours=1),
                 },
                 JWT_SECRET,
@@ -391,8 +418,9 @@ def list_targets():
 @app.route('/admin/config', methods=['GET'])
 @require_token
 def admin_config():
+    keys = [k.name for k in ApiKey.query.filter_by(revoked=False).all()]
     return jsonify({
-        'api_keys': list(API_KEYS.keys()),
+        'api_keys': keys,
         'heartbeat_timeout': TIMEOUT_SECONDS,
         'versions': {
             'backend': BACKEND_VERSION,
@@ -509,7 +537,52 @@ def delete_template(tid):
     db.session.commit()
     return jsonify({'status': 'deleted'})
 
+
+@app.route('/admin/apikeys', methods=['GET'])
+@require_token
+def list_apikeys():
+    entries = ApiKey.query.filter_by(revoked=False).all()
+    result = []
+    for e in entries:
+        result.append({
+            'id': e.id,
+            'name': e.name,
+            'created_at': e.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'last_used_at': e.last_used_at.replace(tzinfo=None).isoformat() + 'Z' if e.last_used_at else None,
+        })
+    return jsonify({'keys': result})
+
+
+@app.route('/admin/apikeys', methods=['POST'])
+@require_token
+def create_apikey():
+    data = request.get_json(force=True)
+    name = data.get('name')
+    if not name:
+        return jsonify({'error': 'invalid'}), 400
+    if ApiKey.query.filter_by(name=name).first():
+        return jsonify({'error': 'duplicate'}), 409
+    secret = base64.urlsafe_b64encode(os.urandom(24)).decode()
+    hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt()).decode()
+    entry = ApiKey(id=str(uuid.uuid4()), name=name, hashed_key=hashed)
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify({'id': entry.id, 'secret': secret})
+
+
+@app.route('/admin/apikeys/<aid>', methods=['DELETE'])
+@require_token
+def revoke_apikey(aid):
+    entry = ApiKey.query.filter_by(id=aid).first()
+    if not entry:
+        return jsonify({'error': 'not found'}), 404
+    entry.revoked = True
+    db.session.commit()
+    return jsonify({'status': 'revoked'})
+
+with app.app_context():
+    db.create_all()
+    migrate_api_keys()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(host='0.0.0.0', port=5000, debug=False)

@@ -122,6 +122,13 @@ The **Commands** page lets an operator view the queued commands for a selected a
 Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft
 `/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
 Command **Templates** vereinfachen wiederkehrende Befehle über `/admin/templates`.
+Die Verwaltung der API-Schlüssel erfolgt über die Seite **API Keys**, welche 
+die Endpunkte `/admin/apikeys` nutzt, um neue Schlüssel zu generieren oder zu
+revoken.
+
+Nach einem Update von älteren Versionen müssen bestehende Schlüssel aus
+`server/config.json` einmalig mit `python server/migrate_keys.py` in die
+Datenbank übertragen werden.
  Start the development server with:
 
 ```bash

@@ -32,6 +32,7 @@ dashboard. Use the **Logout** button in the header to clear the token manually.
   - **Logs** – display recon reports and server logs per agent
   - **Settings** – displays the current backend configuration via `/admin/config`
   - **Templates** – manage reusable command templates
+  - **API Keys** – create and revoke login keys
 
 Navigation is handled via React Router DOM and styled with TailwindCSS.
 
@@ -132,6 +133,12 @@ DELETE /admin/templates/<template_id>
 
 Templates consist of a name, a command and optional JSON parameters. Duplicate
 names are rejected with `409 Conflict`.
+
+## API Keys Interface
+
+The **API Keys** page lists all active keys and allows creation of new ones.
+Only once after creation the secret value is displayed. Existing keys can be
+revoked which immediately prevents further logins.
 
 ## Production Build
 

@@ -73,7 +73,7 @@ POST /login
 
 Das erhaltene JWT muss innerhalb einer Stunde verwendet werden.
 
-Administratoren melden sich über `/login` mit einem API-Key an und erhalten ein JWT. Dieses wird im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt. Abgelaufene oder ungültige Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
+Administratoren melden sich über `/login` mit einem API-Key an und erhalten ein JWT. Die Schlüssel werden seit Version 5 in einer Datenbank gespeichert und können per API verwaltet werden. Das JWT wird im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt. Abgelaufene oder ungültige Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
 
 ### Agents auflisten
 ```
@@ -129,6 +129,24 @@ DELETE /admin/templates/<template_id>
 
 Der Name eines Templates muss eindeutig sein. Bei Dopplern liefert der Server `409 Conflict`.
 
+### API Keys verwalten
+
+API-Schlüssel können über folgende Endpunkte administriert werden:
+
+```bash
+GET /admin/apikeys
+-> { "keys": [{"id":"...","name":"Admin","created_at":"...","last_used_at":"..."}] }
+
+POST /admin/apikeys
+{ "name": "Operator" }
+-> { "id": "...", "secret": "<only shown once>" }
+
+DELETE /admin/apikeys/<id>
+-> { "status": "revoked" }
+```
+
+Das ausgegebene Geheimnis bei der Erstellung wird nur ein einziges Mal angezeigt und muss sicher abgelegt werden.
+
 ## API Hardening
 Alle Agent-Requests tragen ab Version 4 eine HMAC-SHA256-Signatur. Zusätzlich wird pro Aufruf ein einmaliger Nonce sowie ein Zeitstempel übertragen:
 
@@ -143,15 +161,11 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Die API-Schlüssel werden in `config.json` definiert und dienen nur noch zur Ausstellung von JWTs:
-```json
-{
-  "allowed_hosts": ["localhost"],
-  "api_keys": {"admin": "changemeadmin"},
-  "jwt_secret": "change_this_secret"
-}
+Bei früheren Versionen wurden die API-Schlüssel in `config.json` gespeichert. Ab Version 5 müssen diese einmalig in die Datenbank überführt werden:
+```bash
+python migrate_keys.py
 ```
-Beim Login muss ein gültiger Schlüssel angegeben werden. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
+Danach können neue Schlüssel über die `/admin/apikeys`-Schnittstelle erzeugt werden. Beim Login muss ein gültiger Schlüssel angegeben werden. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
 
 ## Domain Fronting Vorbereitung
 

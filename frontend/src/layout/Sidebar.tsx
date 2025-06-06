@@ -8,6 +8,7 @@ const links = [
   { to: '/surveillance', label: 'Surveillance' },
   { to: '/logs', label: 'Logs' },
   { to: '/settings', label: 'Settings' },
+  { to: '/apikeys', label: 'API Keys' },
 ];
 
 export default function Sidebar() {
