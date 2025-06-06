@@ -16,6 +16,7 @@ import Commands from './pages/Commands';
 import Logs from './pages/Logs';
 import Settings from './pages/Settings';
 import Templates from './pages/Templates';
+import Surveillance from './pages/Surveillance';
 import AgentDetail from './features/agents/AgentDetail';
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="/agents" element={<Agents />} />
               <Route path="/commands" element={<Commands />} />
               <Route path="/templates" element={<Templates />} />
+              <Route path="/surveillance" element={<Surveillance />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/agents/:uuid" element={<AgentDetail />} />

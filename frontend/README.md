@@ -28,6 +28,7 @@ Use the **Logout** button in the header to clear the stored key manually.
   - **Dashboard** – landing page
   - **Agents** – lists `/admin/agents` with live updates every 15 seconds
   - **Commands** – manage the queued commands per agent
+  - **Surveillance** – system-wide list of surveillance images
   - **Logs** – display recon reports and server logs per agent
   - **Settings** – displays the current backend configuration via `/admin/config`
   - **Templates** – manage reusable command templates
@@ -96,6 +97,18 @@ GET /admin/logs/<uuid>
 
 Select an agent from the dropdown to load its logs. Each row shows a timestamp, the log type and a short description. If raw data is available it can be expanded in place.
 On the agent detail page you can switch to a **Surveillance** tab that filters the list for surveillance entries and shows thumbnails of captured images.
+
+## Surveillance Overview
+
+Open the **Surveillance** page from the sidebar to review all surveillance images across every agent.
+
+```typescript
+GET /admin/agents
+GET /admin/logs/<uuid>
+-> filter logs for type "Surveillance"
+```
+
+Each row lists the agent UUID, a relative timestamp and the detected person (if present). Thumbnails open a lightbox with the full picture.
 
 ## Settings Interface
 
