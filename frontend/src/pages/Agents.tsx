@@ -19,6 +19,7 @@ export default function Agents() {
               <th className="py-2">UUID</th>
               <th>Status</th>
               <th>Last Seen</th>
+              <th>Stability</th>
             </tr>
           </thead>
           <tbody>
@@ -34,6 +35,19 @@ export default function Agents() {
                   {a.online ? 'Online' : 'Offline'}
                 </td>
                 <td>{formatDistanceToNow(new Date(a.last_seen), { addSuffix: true })}</td>
+                <td>
+                  {(() => {
+                    const seconds =
+                      (Date.now() - new Date(a.last_seen).getTime()) / 1000;
+                    if (!a.online || seconds > 180)
+                      return <span className="bg-red-600 text-xs px-2 py-1 rounded">🔴 Offline</span>;
+                    if (seconds <= 30)
+                      return <span className="bg-green-600 text-xs px-2 py-1 rounded">🟢 Stable</span>;
+                    if (seconds <= 90)
+                      return <span className="bg-yellow-500 text-xs px-2 py-1 rounded">🟡 Warning</span>;
+                    return <span className="bg-orange-500 text-xs px-2 py-1 rounded">🟠 Degraded</span>;
+                  })()}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -46,7 +46,15 @@ hover effect.
 
 The **Agents** page polls `/admin/agents` every 15 seconds to keep the list
 current. The "Last Seen" column shows how long ago an agent checked in
-using `date-fns` for relative timestamps.
+using `date-fns` for relative timestamps. A **Stability** indicator visualizes
+how reliable the heartbeat is:
+
+| Delta | Indicator |
+| ----- | --------- |
+| ≤30s  | 🟢 Stable |
+| 31–90s| 🟡 Warning |
+| 91–180s| 🟠 Degraded |
+| >180s or offline | 🔴 Offline |
 
 ## Commands Interface
 

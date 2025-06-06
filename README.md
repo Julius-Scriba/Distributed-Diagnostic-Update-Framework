@@ -112,9 +112,9 @@ key and manage agents. Open `/login` to enter the key; it is stored in
 cleared and the user is redirected to `/login`. Network issues trigger a global
 "Verbindung zum Backend unterbrochen." banner.
 Operators can log out via the header button which clears the stored key.
-The **Agents** page retrieves data from `/admin/agents` and
-shows the online state of each client. The **Commands** page lets an operator
-view the queued commands for a selected agent and submit new entries via
+The **Agents** page retrieves data from `/admin/agents` and shows the online
+state. A colored badge marks its stability as **Stable**, **Warning**, **Degraded** or **Offline** depending on the last heartbeat.
+The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via
 `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und
 Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft
 `/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
