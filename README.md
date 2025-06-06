@@ -115,7 +115,8 @@ Operators can log out via the header button which clears the stored key.
 The **Agents** page retrieves data from `/admin/agents` and shows the online
 state. A colored badge marks its stability as **Stable**, **Warning**, **Degraded** or **Offline** depending on the last heartbeat.
 Clicking an entry opens `/agents/:uuid` with detailed information and a quick
-command dialog.
+command dialog. In addition to manually entering a command you can select one of
+the stored **Command Templates** to prefill and send common tasks instantly.
 The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via
 `/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und
 Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft

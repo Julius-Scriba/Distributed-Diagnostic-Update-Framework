@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useAgent from '../../api/useAgent';
 import useSendCommand from '../../api/useSendCommand';
+import { useTemplates, type TemplateEntry } from '../../api/useTemplates';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,11 +11,13 @@ export default function AgentDetail() {
   const { uuid } = useParams<{ uuid: string }>();
   const { data: agent, isLoading, isError } = useAgent(uuid || null);
   const sendCommand = useSendCommand(uuid || '');
+  const { data: templates, isLoading: tLoading, isError: tError } = useTemplates();
 
   const [modal, setModal] = useState(false);
   const [cmd, setCmd] = useState('SAFE_MODE');
   const [params, setParams] = useState('{}');
   const [jsonError, setJsonError] = useState('');
+  const [templatePreview, setTemplatePreview] = useState<TemplateEntry | null>(null);
 
   if (isLoading) return <Spinner />;
   if (isError) return <p className="text-red-400">Failed to load agent</p>;
@@ -44,6 +47,14 @@ export default function AgentDetail() {
     }
   };
 
+  const sendTemplate = () => {
+    if (!templatePreview) return;
+    sendCommand.mutate(
+      { command: templatePreview.command, parameters: templatePreview.parameters },
+      { onSuccess: () => setTemplatePreview(null) }
+    );
+  };
+
   return (
     <div className="p-4 text-white space-y-4">
       <h1 className="text-2xl">Agent {agent.uuid}</h1>
@@ -63,6 +74,57 @@ export default function AgentDetail() {
       >
         Send Command
       </button>
+
+      <div>
+        <h2 className="text-xl mb-2 mt-4">Command Templates</h2>
+        {tLoading && <Spinner />}
+        {tError && <p className="text-red-400">Failed to load templates</p>}
+        {templates && (
+          <div className="flex flex-wrap gap-2">
+            {templates.map(t => (
+              <button
+                key={t.template_id}
+                className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded"
+                onClick={() => setTemplatePreview(t)}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Modal open={!!templatePreview} onClose={() => setTemplatePreview(null)}>
+        {templatePreview && (
+          <div>
+            <h2 className="text-xl mb-2">{templatePreview.name}</h2>
+            <pre className="bg-gray-700 p-2 rounded text-sm mb-2 whitespace-pre-wrap">
+              {JSON.stringify(
+                { command: templatePreview.command, parameters: templatePreview.parameters },
+                null,
+                2
+              )}
+            </pre>
+            <button
+              className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded"
+              onClick={sendTemplate}
+              disabled={sendCommand.isPending}
+            >
+              {sendCommand.isPending ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+              ) : (
+                'Senden'
+              )}
+            </button>
+            {sendCommand.isSuccess && (
+              <p className="text-green-400 mt-2 text-center">Command queued</p>
+            )}
+            {sendCommand.isError && (
+              <p className="text-red-400 mt-2 text-center">Error</p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <Modal open={modal} onClose={() => setModal(false)}>
         <h2 className="text-xl mb-2">Send Command</h2>

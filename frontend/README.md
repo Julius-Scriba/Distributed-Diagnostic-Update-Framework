@@ -58,6 +58,9 @@ how reliable the heartbeat is:
 
 Click on an agent UUID to open its detail page `/agents/:uuid` showing the
 stability badge, last seen information and a dialog to send commands directly.
+Below the dialog a list of **Command Templates** is available. Selecting one
+previews the JSON payload and allows sending it to the agent with a single
+click.
 
 ## Commands Interface
 
