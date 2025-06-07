@@ -154,3 +154,4 @@ npm run build
 ```
 
 The compiled files appear under `dist/` and can be served by Nginx or another static server.
+Every build uses a random hash value appended to asset filenames so the browser always fetches fresh files even if their contents did not change.
