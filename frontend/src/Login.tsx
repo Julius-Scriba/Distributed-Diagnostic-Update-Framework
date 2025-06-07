@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from './api';
 import Spinner from './components/Spinner';
+import Button from './components/ui/Button';
+import Input from './components/ui/Input';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
   const [username, setUsername] = useState('');
@@ -14,16 +16,16 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     <div className="flex flex-col items-center justify-center h-screen">
       <div className="bg-[#1a1a1a] p-6 rounded shadow-md w-80">
         <h1 className="text-2xl mb-4 text-center text-neonBlue">ULTSPY Login</h1>
-        <input
-          className="w-full p-2 bg-[#232323] rounded mb-4"
+        <Input
           placeholder="Benutzername"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          className="mb-4"
         />
         <div className="relative mb-4">
-          <input
+          <Input
             type={show ? 'text' : 'password'}
-            className="w-full p-2 bg-[#232323] rounded pr-10"
+            className="pr-10"
             placeholder="Passwort"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -36,8 +38,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             {show ? '🙈' : '👁️'}
           </button>
         </div>
-        <button
-          className="w-full bg-neonBlue hover:bg-cyan-400 py-2 rounded text-[#121212]"
+        <Button
+          className="w-full"
           onClick={async () => {
             setLoading(true);
             setError('');
@@ -55,7 +57,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
           }}
         >
           {loading ? <Spinner /> : 'Login'}
-        </button>
+        </Button>
         {error && <p className="text-red-500 mt-2 text-center text-sm">{error}</p>}
       </div>
     </div>
