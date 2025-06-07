@@ -30,12 +30,23 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
   - Kommandos werden pluginbasiert über eine Registry geladen
 - Crypto: AES-256-CBC-Verschlüsselung der Datenübertragung
 - Key-Exchange: RSA-4096 initialer Schluessel
-- Persistenz via Run-Key und Task-Scheduler
+- Fortgeschrittener Persistenz-Layer (HKCU/HKLM Run-Keys, verschleierte Tasks, ADS optional, WMI-Vorbereitung)
+- Automatische Update-Kontrolle im Deploy-Build
 - Safe-Mode bei Serverkommando
 - Wipe- und Deep-Sleep-Kommandos
 - Erste Obfuskationsschicht: verschluesselte Strings und Control-Flow-Flattening im Command-Handler
+- Zufällige HTTP-Header pro Client-Session zur Stealth-Kommunikation
+- Vorbereitung für Domain Fronting mit konfigurierbaren Zieladressen
+- HMAC-Signaturen mit Nonce- und Timestamp-Prüfung gegen Replay-Attacken
 - IPC-Basis über eine Named Pipe `\\.\pipe\US_IPC_CORE` zur künftigen Kommunikation zwischen Modulen
 - Hardened Loader lädt Module aus AES-verschlüsselten Payloads direkt aus dem Speicher
+- Vorbereitende Anti-Forensik Stubs (Process Hollowing & PPID Spoofing)
+- Initiales Recon-Modul sammelt umfangreiche Systeminformationen
+- ReconAdvanced-Modul (nur Deploy-Version) liefert detaillierte Hardware- und Sicherheitsdaten
+- Active Surveillance Modul überwacht Prozesse und Autostart-Einträge
+- Kommando-Templates erleichtern wiederkehrende Steuerbefehle
+- Dynamischer Kommando-Dispatcher im Deploy-Build verarbeitet JSON-Befehle
+- Task Scheduler erlaubt verzögertes Ausführen von Kommandos
 
 ### Server (Python)
 
@@ -45,8 +56,10 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Kommandomodul pro Client
 - Persistente Datenhaltung (SQLite, vorbereitbar für PostgreSQL)
 - Loggingsystem
-- Admin-Schnittstelle mit API-Key-Authentifizierung
+ - Admin-Schnittstelle mit JWT-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
+- Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
+ - Login-Daten für Admin-Endpunkte werden initial aus `config.json` migriert und danach in einer Datenbank gespeichert
 
 ---
 
@@ -54,7 +67,9 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 
 ### Client
 - CMake + GCC (C++)
-- Eigenständiger modularer Build
+- Zwei Build-Varianten:
+  - `dev_version` mit Debug-Logging
+  - `deployable_version` für produktiven Einsatz
 
 ### Server
 - Python 3.x
@@ -69,8 +84,12 @@ Dieses Projekt ist für Forschungs- und Entwicklungszwecke bestimmt.
 ### Build-Anleitung
 
 ```
-# Client
-cd client && mkdir build && cd build
+# Client (dev)
+cd client/dev_version && mkdir build && cd build
+cmake .. && make
+
+# Client (deployable)
+cd ../../deployable_version && mkdir build && cd build
 cmake .. && make
 
 # Server
@@ -92,16 +111,67 @@ Kommandos werden nun als JSON-Objekt in der Form
 übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
 beim `CommandRegistry` an.
 
-Administratoren können über die API-Key geschützten Endpunkte `/admin/agents`,
-`/admin/logs/<uuid>` und `/admin/command/<uuid>` auf den Server zugreifen. Der
-API-Schlüssel wird via `X-API-KEY` Header übermittelt.
+Administratoren melden sich über `/login` mit Benutzername und Passwort an und erhalten ein 24\u00a0Stunden g\u00fcltiges JWT. Dieses wird im `Authorization` Header an alle `/admin/*` Endpunkte angeh\u00e4ngt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
 
 ### Web UI
 
-A React-based interface in `frontend/` allows operators to log in with their API key and manage agents. Start the development server with:
+A React-based interface in `frontend/` allows operators to log in with username and password. The interface has a dark theme with neon-blue and turquoise accents and uses icons from `lucide-react`.
+The issued JWT is stored in `localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization` header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
+is removed and the user is redirected to `/login`. Network issues trigger a global
+"Verbindung zum Backend unterbrochen." banner.
+Operators can log out via the header button which clears the token.
+The **Agents** page retrieves data from `/admin/agents` and shows the online
+state. A colored badge marks its stability as **Stable**, **Warning**, **Degraded** or **Offline** depending on the last heartbeat.
+Clicking an entry opens `/agents/:uuid` with detailed information and a quick
+command dialog. In addition to manually entering a command you can select one of
+the stored **Command Templates** to prefill and send common tasks instantly.
+The **Commands** page lets an operator view the queued commands for a selected agent and submit new entries via
+`/admin/command/<uuid>`. The **Logs** page zeigt gespeicherte Recon- und
+Überwachungsdaten über `/admin/logs/<uuid>`. Die **Settings** Seite ruft
+`/admin/config` ab und stellt die aktuellen Konfigurationswerte dar.
+Command **Templates** vereinfachen wiederkehrende Befehle über `/admin/templates`.
+Die Verwaltung der API-Schlüssel erfolgt über die Seite **API Keys** mit den Endpunkten `/admin/apikeys`.
+Beim ersten Start ohne hinterlegte Schlüssel erzeugt der Server automatisch einen Admin-Key und gibt dessen Secret im Log aus.
+Eine zusätzliche **Audit Log** Ansicht zeigt alle Login- und Schlüsselaktionen an, die der Server in einer Audit-Tabelle speichert.
+Sind in `server/config.json` noch alte Klartext-Schlüssel definiert, lassen sie sich mit `python server/migrate_keys.py` einmalig in die Datenbank übertragen.
+ Start the development server with:
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
+## Deployment
+
+The repository should reside in `~/Distributed-Diagnostic-Update-Framework/`.
+It contains three main sub directories:
+
+```
+server/   # Flask API and Gunicorn entry point
+client/   # C++ agent sources
+frontend/ # React dashboard
+```
+
+A helper script `deploy-all.sh` automates the build and deployment process. The
+compiled dashboard is served from `/var/www/ultspy-dashboard/` while the Flask
+API runs via Gunicorn.
+
+Run the deployment after pulling the latest sources:
+
+```bash
+./deploy-all.sh
+```
+
+The script performs the following steps:
+
+1. `git pull` to update the repository
+2. install backend requirements inside `server/venv` and restart the Gunicorn
+   service `ultspy.service`
+3. compile both client variants using CMake under `client/dev_version` and
+   `client/deployable_version`
+4. build the frontend with `npm run build` and sync the resulting files to
+   `/var/www/ultspy-dashboard/`
+
+Old frontend builds are archived in `/var/www/ultspy-dashboard-backups` and the
+ten most recent backups are kept automatically.

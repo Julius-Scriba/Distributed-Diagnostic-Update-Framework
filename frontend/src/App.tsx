@@ -1,31 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
+  Outlet,
 } from 'react-router-dom';
 import Login from './Login';
-import Dashboard from './Dashboard';
+import Layout from './layout/Layout';
+import { setUnauthorizedHandler, setNetworkErrorHandler } from './api';
+import Dashboard from './pages/Dashboard';
+import Agents from './pages/Agents';
+import Commands from './pages/Commands';
+import Logs from './pages/Logs';
+import Settings from './pages/Settings';
+import Templates from './pages/Templates';
+import Surveillance from './pages/Surveillance';
+import ApiKeys from './pages/ApiKeys';
+import AuditLog from './pages/AuditLog';
 import AgentDetail from './features/agents/AgentDetail';
 
 const queryClient = new QueryClient();
 
+function AuthGuard({ token }: { token: string | null }) {
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('apiKey'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('ULTSPY_JWT'));
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      localStorage.removeItem('ULTSPY_JWT');
+      setToken(null);
+      window.location.href = '/login';
+    });
+    setNetworkErrorHandler(() => setError('Verbindung zum Backend unterbrochen.'));
+  }, []);
+
+  const handleLogin = (jwt: string) => {
+    localStorage.setItem('ULTSPY_JWT', jwt);
+    setToken(jwt);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('ULTSPY_JWT');
+    setToken(null);
+    window.location.href = '/login';
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
-      {loggedIn ? (
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/agents/:uuid" element={<AgentDetail />} />
-          </Routes>
-        </BrowserRouter>
-      ) : (
-        <Login onLogin={() => setLoggedIn(true)} />
-      )}
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route element={<AuthGuard token={token} />}>
+            <Route element={<Layout onLogout={handleLogout} error={error} clearError={() => setError(null)} />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/agents" element={<Agents />} />
+              <Route path="/commands" element={<Commands />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="/surveillance" element={<Surveillance />} />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/apikeys" element={<ApiKeys />} />
+              <Route path="/audit" element={<AuditLog />} />
+              <Route path="/agents/:uuid" element={<AgentDetail />} />
+            </Route>
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }
