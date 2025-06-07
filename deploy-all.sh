@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$HOME/Distributed-Diagnostic-Update-Framework"
 BACKEND_DIR="$REPO_DIR/server"
 FRONTEND_DIR="$REPO_DIR/frontend"
+CLIENT_DIR="$REPO_DIR/client"
 WEBROOT="/var/www/ultspy-dashboard"
 BACKUP_DIR="${WEBROOT}-backups"
 LOG_DIR="$REPO_DIR/deploy_logs"
@@ -14,7 +15,6 @@ LOGFILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
 exec > >(tee -a "$LOGFILE") 2>&1
 
 echo "[deploy] Starting deployment $(date)"
-
 cd "$REPO_DIR"
 echo "[deploy] Updating repository..."
 if ! git pull --ff-only; then
@@ -31,13 +31,15 @@ fi
 source "$VENVDIR/bin/activate"
 echo "[deploy] Installing backend requirements"
 pip install -r requirements.txt
-
-echo "[deploy] Migrating database if needed"
 python migrate_keys.py || true
-
 systemctl restart ultspy.service || echo "[deploy] Warning: could not restart gunicorn service"
-
 deactivate
+
+# Client build
+cd "$CLIENT_DIR"
+echo "[deploy] Building client versions"
+cmake -S dev_version -B dev_version/build && cmake --build dev_version/build -j$(nproc)
+cmake -S deployable_version -B deployable_version/build && cmake --build deployable_version/build -j$(nproc)
 
 # Frontend build
 cd "$FRONTEND_DIR"

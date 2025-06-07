@@ -144,11 +144,18 @@ npm run dev
 
 ## Deployment
 
-The project assumes the repository resides in
-`~/Distributed-Diagnostic-Update-Framework/`. A helper script `deploy-all.sh`
-automates building the web interface and updating the running backend. The
-frontend is served from `/var/www/ultspy-dashboard/` while the Flask API runs via
-Gunicorn.
+The repository should reside in `~/Distributed-Diagnostic-Update-Framework/`.
+It contains three main sub directories:
+
+```
+server/   # Flask API and Gunicorn entry point
+client/   # C++ agent sources
+frontend/ # React dashboard
+```
+
+A helper script `deploy-all.sh` automates the build and deployment process. The
+compiled dashboard is served from `/var/www/ultspy-dashboard/` while the Flask
+API runs via Gunicorn.
 
 Run the deployment after pulling the latest sources:
 
@@ -161,7 +168,9 @@ The script performs the following steps:
 1. `git pull` to update the repository
 2. install backend requirements inside `server/venv` and restart the Gunicorn
    service `ultspy.service`
-3. build the frontend with `npm run build` and sync the resulting files to
+3. compile both client variants using CMake under `client/dev_version` and
+   `client/deployable_version`
+4. build the frontend with `npm run build` and sync the resulting files to
    `/var/www/ultspy-dashboard/`
 
 Old frontend builds are archived in `/var/www/ultspy-dashboard-backups` and the

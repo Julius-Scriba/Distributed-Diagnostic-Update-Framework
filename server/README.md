@@ -186,10 +186,11 @@ Beispiel `config.json`:
 
 ## Deployment
 
-Run `../deploy-all.sh` from the repository root to build the frontend, update the
-backend virtual environment under `server/venv` and restart the Gunicorn service
-(`ultspy.service`). This script also copies the freshly built dashboard to
-`/var/www/ultspy-dashboard/`.
+Run `../deploy-all.sh` from the repository root. The script updates the
+repository, rebuilds the backend in `server/venv`, compiles both client
+variants with CMake and copies the freshly built dashboard to
+`/var/www/ultspy-dashboard/` before restarting the `ultspy.service` Gunicorn
+unit.
 
 The Flask app can be reverse proxied (for example via Caddy or Nginx). Logs are
 written to STDOUT by Gunicorn and should be captured by the supervising service
