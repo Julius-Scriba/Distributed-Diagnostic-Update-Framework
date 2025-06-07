@@ -172,11 +172,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Bei früheren Versionen wurden die API-Schlüssel in `config.json` gespeichert. Ab Version 5 müssen diese einmalig in die Datenbank überführt werden:
-```bash
-python migrate_keys.py
-```
-Danach können neue Schlüssel über die `/admin/apikeys`-Schnittstelle erzeugt werden. Beim Login werden Benutzername und Passwort geprüft. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
+Bei früheren Versionen wurden die API-Schlüssel in `config.json` gespeichert. Ab Version 5 werden sie in der Datenbank verwaltet. Sollten noch Keys in der Konfigurationsdatei stehen, können diese mit `python migrate_keys.py` überführt werden. Beim ersten Start ohne vorhandene Einträge erzeugt der Server automatisch einen Admin-Key und gibt das Secret im Log aus. Anschließend lassen sich weitere Keys über die `/admin/apikeys`-Schnittstelle erzeugen. Beim Login werden Benutzername und Passwort geprüft. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
 
 ## Domain Fronting Vorbereitung
 

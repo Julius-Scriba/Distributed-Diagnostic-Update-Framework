@@ -67,6 +67,19 @@ def migrate_api_keys():
         global API_KEYS
         API_KEYS = {}
 
+def ensure_admin_key():
+    """Ensure there is at least one admin API key in the database."""
+    existing = ApiKey.query.first()
+    if existing:
+        logging.info('Loaded %d API key(s) from database', ApiKey.query.count())
+        return
+    secret = base64.urlsafe_b64encode(os.urandom(24)).decode()
+    hashed = bcrypt.hashpw(secret.encode(), bcrypt.gensalt()).decode()
+    entry = ApiKey(id=str(uuid.uuid4()), name='admin', hashed_key=hashed)
+    db.session.add(entry)
+    db.session.commit()
+    logging.warning('Generated new admin API key: %s', secret)
+
 
 def require_api_key(f):
     @wraps(f)
@@ -620,6 +633,7 @@ def revoke_apikey(aid):
 with app.app_context():
     db.create_all()
     migrate_api_keys()
+    ensure_admin_key()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
