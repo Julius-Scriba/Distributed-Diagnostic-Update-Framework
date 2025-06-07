@@ -56,10 +56,10 @@ Dieses Projekt dient ausschließlich zu Forschungs-, Entwicklungs- und Systemadm
 - Kommandomodul pro Client
 - Persistente Datenhaltung (SQLite, vorbereitbar für PostgreSQL)
 - Loggingsystem
-- Admin-Schnittstelle mit API-Key-Authentifizierung
+ - Admin-Schnittstelle mit JWT-Authentifizierung
 - Endpunkt `/payload/<uuid>/<module>` liefert verschlüsselte Module für den Loader
 - Routing-Tabelle aus `config.json` erlaubt mehrere Zielhosts (Domain Fronting Vorbereitung)
-- API-Schlüssel für Admin-Endpunkte werden ebenfalls in `config.json` gespeichert
+ - Login-Daten für Admin-Endpunkte werden initial aus `config.json` migriert und danach in einer Datenbank gespeichert
 
 ---
 
@@ -111,14 +111,12 @@ Kommandos werden nun als JSON-Objekt in der Form
 übermittelt. Neue Befehle können als Plugins registriert werden und melden sich
 beim `CommandRegistry` an.
 
-Administratoren melden sich nun über `/login` mit einem API-Key an und erhalten ein zeitlich begrenztes JWT. Dieses wird im `Authorization` Header an alle `/admin/*` Endpunkte angehängt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
+Administratoren melden sich über `/login` mit Benutzername und Passwort an und erhalten ein 24\u00a0Stunden g\u00fcltiges JWT. Dieses wird im `Authorization` Header an alle `/admin/*` Endpunkte angeh\u00e4ngt. Die Logs-Schnittstelle liefert Recon-Berichte und Servermeldungen eines Agents chronologisch als JSON.
 
 ### Web UI
 
-A React-based interface in `frontend/` allows operators to log in with their API
-key and manage agents. The interface has a dark theme with neon-blue and turquoise accents and uses icons from `lucide-react`. Open `/login` to enter the key; it is stored in
-`localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization`
-header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
+A React-based interface in `frontend/` allows operators to log in with username and password. The interface has a dark theme with neon-blue and turquoise accents and uses icons from `lucide-react`.
+The issued JWT is stored in `localStorage` under `ULTSPY_JWT` and automatically sent in the `Authorization` header for all `/admin/*` requests. If the backend responds with `401 Unauthorized` the token
 is removed and the user is redirected to `/login`. Network issues trigger a global
 "Verbindung zum Backend unterbrochen." banner.
 Operators can log out via the header button which clears the token.

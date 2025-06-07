@@ -4,7 +4,8 @@ import api from './api';
 import Spinner from './components/Spinner';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
-  const [key, setKey] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,13 +14,19 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     <div className="flex flex-col items-center justify-center h-screen">
       <div className="bg-[#1a1a1a] p-6 rounded shadow-md w-80">
         <h1 className="text-2xl mb-4 text-center text-neonBlue">ULTSPY Login</h1>
+        <input
+          className="w-full p-2 bg-[#232323] rounded mb-4"
+          placeholder="Benutzername"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
         <div className="relative mb-4">
           <input
             type={show ? 'text' : 'password'}
             className="w-full p-2 bg-[#232323] rounded pr-10"
-            placeholder="API Key"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
+            placeholder="Passwort"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <button
             type="button"
@@ -35,13 +42,13 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             setLoading(true);
             setError('');
             try {
-              const res = await api.post('/login', { api_key: key });
+              const res = await api.post('/login', { username, password });
               localStorage.setItem('ULTSPY_JWT', res.data.token);
               onLogin();
               navigate('/');
             } catch {
               localStorage.removeItem('ULTSPY_JWT');
-              setError('Ungültiger API-Key oder keine Verbindung zum Server.');
+              setError('Ungültiger Login oder keine Verbindung zum Server.');
             } finally {
               setLoading(false);
             }

@@ -86,9 +86,12 @@ def require_token(f):
         token = auth.split(' ', 1)[1]
         try:
             data = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
-            request.token_data = data
         except Exception:
             abort(401)
+        entry = ApiKey.query.filter_by(id=data.get('kid'), revoked=False).first()
+        if not entry:
+            abort(401)
+        request.token_data = {'id': entry.id, 'name': entry.name}
         return f(*args, **kwargs)
     return wrapper
 
@@ -242,22 +245,23 @@ def register_client(uuid):
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json(force=True)
-    key = data.get('api_key', '')
-    for entry in ApiKey.query.filter_by(revoked=False).all():
-        if bcrypt.checkpw(key.encode(), entry.hashed_key.encode()):
-            entry.last_used_at = datetime.utcnow()
-            entry.last_ip = request.remote_addr
-            db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_success', key_id=entry.id, ip=request.remote_addr))
-            db.session.commit()
-            token = jwt.encode(
-                {
-                    'kid': entry.id,
-                    'exp': datetime.utcnow() + timedelta(hours=1),
-                },
-                JWT_SECRET,
-                algorithm='HS256',
-            )
-            return jsonify({'token': token})
+    username = data.get('username', '')
+    password = data.get('password', '')
+    entry = ApiKey.query.filter_by(name=username, revoked=False).first()
+    if entry and bcrypt.checkpw(password.encode(), entry.hashed_key.encode()):
+        entry.last_used_at = datetime.utcnow()
+        entry.last_ip = request.remote_addr
+        db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_success', key_id=entry.id, ip=request.remote_addr))
+        db.session.commit()
+        token = jwt.encode(
+            {
+                'kid': entry.id,
+                'exp': datetime.utcnow() + timedelta(hours=24),
+            },
+            JWT_SECRET,
+            algorithm='HS256',
+        )
+        return jsonify({'token': token})
     db.session.add(AuditLog(id=str(uuid.uuid4()), action='login_failed', ip=request.remote_addr))
     db.session.commit()
     return jsonify({'error': 'unauthorized'}), 401

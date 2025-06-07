@@ -13,13 +13,13 @@ The development server proxies API requests to `http://localhost:5000`.
 
 ## Login
 
-Open `/login` and enter your API key. The key is verified by the backend and a
-JWT token is returned. This token is saved in `localStorage` under
-`ULTSPY_JWT` and automatically attached to all `/admin/*` requests via the
-`Authorization` header. If a request fails with `401 Unauthorized`, the token is
-removed and you are redirected back to the login page. Network outages trigger a
-red banner saying "Verbindung zum Backend unterbrochen." at the top of the
-dashboard. The login form lets you toggle the API key visibility while typing.
+Open `/login` and enter your username and password. The backend returns a JWT
+token which is saved in `localStorage` under `ULTSPY_JWT` and automatically
+attached to all `/admin/*` requests via the `Authorization` header. If a request
+fails with `401 Unauthorized`, the token is removed and you are redirected back
+to the login page. Network outages trigger a red banner saying "Verbindung zum
+Backend unterbrochen." at the top of the dashboard. The login form lets you
+toggle the password visibility while typing.
 Use the **Logout** button in the header to clear the token manually.
 
 ## Project Structure

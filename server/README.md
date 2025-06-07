@@ -68,13 +68,13 @@ Der verschlüsselte Überwachungsbericht enthält laufende Prozesse, Autoruns un
 ### Login
 ```
 POST /login
-{ "api_key": "changemeadmin" }
+{ "username": "admin", "password": "changemeadmin" }
 -> { "token": "<jwt>" }
 ```
 
-Das erhaltene JWT muss innerhalb einer Stunde verwendet werden.
+Das erhaltene JWT ist 24 Stunden gültig.
 
-Administratoren melden sich über `/login` mit einem API-Key an und erhalten ein JWT. Die Schlüssel werden seit Version 5 in einer Datenbank gespeichert und können per API verwaltet werden. Das JWT wird im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt. Abgelaufene oder ungültige Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
+Administratoren melden sich jetzt mit Benutzername und Passwort an. Die Passwörter werden bcrypt-gehasht in der Datenbank gespeichert. Das ausgegebene JWT muss im Header `Authorization: Bearer <token>` an alle `/admin/*` Endpoints angehängt werden. Ungültige oder abgelaufene Tokens führen zu `401 Unauthorized` und erfordern einen erneuten Login.
 
 ### Agents auflisten
 ```
@@ -97,7 +97,7 @@ Ein Eintrag enthält Zeitstempel (UTC), Typ des Eintrags (Recon, Surveillance, I
 POST /admin/command/<uuid>
 { "command": "SAFE_MODE", "parameters": {} }
 ```
-Identisch zu `/command/<uuid>`, aber nur mit gültigem API-Key erreichbar.
+Identisch zu `/command/<uuid>`, aber nur mit gültigem JWT erreichbar.
 
 ### Aktuelle Server-Konfiguration
 ```
@@ -176,7 +176,7 @@ Bei früheren Versionen wurden die API-Schlüssel in `config.json` gespeichert. 
 ```bash
 python migrate_keys.py
 ```
-Danach können neue Schlüssel über die `/admin/apikeys`-Schnittstelle erzeugt werden. Beim Login muss ein gültiger Schlüssel angegeben werden. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
+Danach können neue Schlüssel über die `/admin/apikeys`-Schnittstelle erzeugt werden. Beim Login werden Benutzername und Passwort geprüft. Anschließend werden alle Admin-Aufrufe mit `Authorization: Bearer <token>` durchgeführt.
 
 ## Domain Fronting Vorbereitung
 
