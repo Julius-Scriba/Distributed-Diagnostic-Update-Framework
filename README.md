@@ -144,31 +144,25 @@ npm run dev
 
 ## Deployment
 
-The production setup bundles the API server and compiled frontend into `/srv/ultspy-c2`:
+The project assumes the repository resides in
+`~/Distributed-Diagnostic-Update-Framework/`. A helper script `deploy-all.sh`
+automates building the web interface and updating the running backend. The
+frontend is served from `/var/www/ultspy-dashboard/` while the Flask API runs via
+Gunicorn.
 
-```
-/srv/ultspy-c2/
-  backend
-  frontend
-  venv
+Run the deployment after pulling the latest sources:
+
+```bash
+./deploy-all.sh
 ```
 
-1. Build the web interface:
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   ```
-   The static files appear in `frontend/dist/`.
-2. Create a virtual environment and install the backend:
-   ```bash
-   cd ../server
-   python -m venv /srv/ultspy-c2/venv
-   source /srv/ultspy-c2/venv/bin/activate
-   pip install -r requirements.txt
-   ```
-3. Launch the API with Gunicorn:
-   ```bash
-   gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
-   ```
-The backend should be reverse proxied by a web server like Nginx. Static frontend files can be served directly from `/srv/ultspy-c2/frontend`.
+The script performs the following steps:
+
+1. `git pull` to update the repository
+2. install backend requirements inside `server/venv` and restart the Gunicorn
+   service `ultspy.service`
+3. build the frontend with `npm run build` and sync the resulting files to
+   `/var/www/ultspy-dashboard/`
+
+Old frontend builds are archived in `/var/www/ultspy-dashboard-backups` and the
+ten most recent backups are kept automatically.

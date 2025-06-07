@@ -186,14 +186,11 @@ Beispiel `config.json`:
 
 ## Deployment
 
-1. Create a virtual environment and install dependencies:
-```bash
-python -m venv /srv/ultspy-c2/venv
-source /srv/ultspy-c2/venv/bin/activate
-pip install -r requirements.txt
-```
-2. Start the API using Gunicorn:
-```bash
-gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app
-```
-This will expose the Flask app via WSGI. The server logs to STDOUT and can be combined with a process manager and proxy such as Nginx.
+Run `../deploy-all.sh` from the repository root to build the frontend, update the
+backend virtual environment under `server/venv` and restart the Gunicorn service
+(`ultspy.service`). This script also copies the freshly built dashboard to
+`/var/www/ultspy-dashboard/`.
+
+The Flask app can be reverse proxied (for example via Caddy or Nginx). Logs are
+written to STDOUT by Gunicorn and should be captured by the supervising service
+manager.
