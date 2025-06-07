@@ -9,7 +9,7 @@ import Modal from '../../components/Modal';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function AgentDetail() {
-  const { uuid } = useParams<{ uuid: string }>();
+  const { uuid } = useParams();
   const { data: agent, isLoading, isError } = useAgent(uuid || null);
   const sendCommand = useSendCommand(uuid || '');
   const { data: templates, isLoading: tLoading, isError: tError } = useTemplates();
