@@ -5,7 +5,7 @@ import Spinner from './components/Spinner';
 import Button from './components/ui/Button';
 import Input from './components/ui/Input';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+export default function Login({ onLogin }: { onLogin: (token: string) => void }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
@@ -46,7 +46,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             try {
               const res = await api.post('/login', { username, password });
               localStorage.setItem('ULTSPY_JWT', res.data.token);
-              onLogin();
+              onLogin(res.data.token);
               navigate('/');
             } catch {
               localStorage.removeItem('ULTSPY_JWT');

@@ -23,34 +23,40 @@ import AgentDetail from './features/agents/AgentDetail';
 
 const queryClient = new QueryClient();
 
-function RequireAuth({ loggedIn }: { loggedIn: boolean }) {
-  return loggedIn ? <Outlet /> : <Navigate to="/login" replace />;
+function AuthGuard({ token }: { token: string | null }) {
+  return token ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('ULTSPY_JWT'));
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('ULTSPY_JWT'));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
       localStorage.removeItem('ULTSPY_JWT');
-      setLoggedIn(false);
+      setToken(null);
       window.location.href = '/login';
     });
     setNetworkErrorHandler(() => setError('Verbindung zum Backend unterbrochen.'));
   }, []);
 
+  const handleLogin = (jwt: string) => {
+    localStorage.setItem('ULTSPY_JWT', jwt);
+    setToken(jwt);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('ULTSPY_JWT');
-    setLoggedIn(false);
+    setToken(null);
+    window.location.href = '/login';
   };
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login onLogin={() => setLoggedIn(true)} />} />
-          <Route element={<RequireAuth loggedIn={loggedIn} />}>
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route element={<AuthGuard token={token} />}>
             <Route element={<Layout onLogout={handleLogout} error={error} clearError={() => setError(null)} />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/agents" element={<Agents />} />
